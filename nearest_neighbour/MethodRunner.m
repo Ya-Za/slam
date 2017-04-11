@@ -1,4 +1,4 @@
-classdef MethodRunner
+classdef MethodRunner < handle
     %Run given nearest neighbours methods on input data and save results
 
     properties
@@ -17,14 +17,31 @@ classdef MethodRunner
         rootDir = './assets';
         % todo: default value if it is null
         inputDirs = {};
-        % todo: default value if it is null
-        intersectionObj = [];
+        intersectionObj = Intersection();
         % todo: add `overwrite` property
     end
     
     methods
+        function init(obj)
+            % Initilize properties
+            
+            % inputDirs
+            if isempty(obj.inputDirs)
+                obj.inputDirs = dir(obj.rootDir);
+                % remove `.` and `..`
+                obj.inputDirs(1:2) = [];
+                % select just directories not files
+                obj.inputDirs = obj.inputDirs([obj.inputDirs.isdir]);
+                % select name of directories
+                obj.inputDirs = {obj.inputDirs.name};
+            end
+        end
+
         function run(obj)
             % Run
+            
+            % init
+            obj.init();
             
             for indexOfMethod = 1:numel(obj.methods_)
                 method = obj.methods_{indexOfMethod};
