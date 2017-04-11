@@ -1,0 +1,43 @@
+%% Nearest Neighbour
+%% Initialize
+%%
+close('all');
+clear();
+clc();
+%% Parameters
+%%
+std = 1;
+maxDistance = 10;
+numberOfPoints = 100;
+numberOfDimensions = 2;
+samplesDir = './assets';
+numberOfSamples = 10;
+
+radius = 1;
+
+methods_ = {@nn};
+inputDirs = {'./assets/inputs/s1d10'}; % todo: can be automated
+rootDir = './assets/outputs';
+%% Generate and Save Random Walks
+%%
+rw = RandomWalk();
+rw.std = std;
+rw.maxDistance = maxDistance;
+rw.numberOfPoints = numberOfPoints;
+rw.numberOfDimensions = numberOfDimensions;
+
+% rw.saveSamples(samplesDir, numberOfSamples);
+%% Run Methods
+%%
+% Intersection
+intersectionObj = Intersection();
+intersectionObj.radius = radius;
+
+% MethodRunner
+mr = MethodRunner();
+mr.methods_ = methods_;
+mr.inputDirs = inputDirs;
+mr.rootDir = rootDir;
+mr.intersectionObj = intersectionObj;
+
+mr.run()
