@@ -36,7 +36,7 @@ classdef RandomWalk < handle
             % - generate
             for indexOfPoint = 2:obj.numberOfPoints
                 for indexOfDimension = 1:obj.numberOfDimensions
-                    value = points(indexOfDimension, indexOfPoint);
+                    value = points(indexOfDimension, indexOfPoint - 1);
                     step = obj.std * randn();
                     
                     if obj.isValid(value + step)
@@ -76,16 +76,26 @@ classdef RandomWalk < handle
             % default values
             % - outDir
             if ~exist('outDir', 'var')
-                outDir = './assets/inputs';
+                outDir = './assets';
             end
             if ~exist('numberOfSamples', 'var')
                 numberOfSamples = 100;
             end
             
             % specify name of output folder
+            % format string
+            %     s -> std
+            %     m -> maxDistance
+            %     d -> numberOfDimensions
+            %     n -> numberOfPoints
             outDir = fullfile(...
                 outDir, ...
-                sprintf('s%dd%d', obj.std, obj.maxDistance) ...
+                sprintf('s%dm%dd%dn%d', ...
+                    obj.std, ...
+                    obj.maxDistance, ...
+                    obj.numberOfDimensions, ...
+                    obj.numberOfPoints ...
+                ) ...
             );
             if ~exist(outDir, 'dir')
                 mkdir(outDir);
@@ -97,11 +107,38 @@ classdef RandomWalk < handle
             
             for indexOfSample = 1:numberOfSamples
                 points = obj.getPoints();
-                save(...
-                    fullfile(outDir, num2str(lastNumberOfSamples + indexOfSample)), ...
-                    'points' ...
+                outFile = fullfile(...
+                    outDir, ...
+                    num2str(lastNumberOfSamples + indexOfSample) ...
                 );
+                
+                obj.saveSample(outFile, points);
             end
+        end
+        
+        function saveSample(obj, filename, points)
+            % Save generated random walk with its config
+            %
+            % Parameters
+            % ----------
+            % - filename: char vector
+            %   Path of output file
+            % - points: double matrix
+            %   Ouput pionts. [p1, p2, ...]
+            
+            config = struct(...
+                'std', obj.std, ...
+                'maxDistance', obj.maxDistance, ...
+                'numberOfPoints', obj.numberOfPoints, ...
+                'numberOfDimensions', obj.numberOfDimensions ...
+            );
+        
+            input = struct(...
+                'config', config, ...
+                'points', points ...
+            );
+        
+            save(filename, 'input');
         end
     end
 end
