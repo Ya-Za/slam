@@ -16,7 +16,7 @@ numberOfSamples = 10;
 radius = 1; % alwasy is 1!
 
 methods_ = {@nn};
-inputDirs = {'./assets/inputs/s1d10'}; % todo: can be automated
+inputDirs = {'s1m10d2n100'}; % todo: can be automated
 %% Generate and Save Random Walks
 %%
 rw = RandomWalk();
@@ -25,7 +25,7 @@ rw.maxDistance = maxDistance;
 rw.numberOfPoints = numberOfPoints;
 rw.numberOfDimensions = numberOfDimensions;
 
-rw.saveSamples(rootDir, numberOfSamples);
+% rw.saveSamples(rootDir, numberOfSamples);
 %% Run Methods
 %%
 % Intersection
@@ -39,4 +39,7 @@ mr.inputDirs = inputDirs;
 mr.rootDir = rootDir;
 mr.intersectionObj = intersectionObj;
 
-% mr.run()
+mr.run()
+%% End
+%%
+disp('End.');
