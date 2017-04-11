@@ -26,6 +26,8 @@ classdef MethodRunner < handle
             % Initilize properties
             
             % inputDirs
+            % - if `inputDirs` is empty put name of sub-folders of `rootDir`
+            %   in it
             if isempty(obj.inputDirs)
                 obj.inputDirs = dir(obj.rootDir);
                 % remove `.` and `..`
