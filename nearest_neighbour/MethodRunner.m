@@ -6,17 +6,20 @@ classdef MethodRunner
         % ----------
         % - methods_: cell array of function_handle
         %   Input nearest neighbours methods
-        % - inputDirs: cell array of char vector
-        %   Path of input directories
         % - rootDir: char vector
         %   Path of root of output directory
+        % - inputDirs: cell array of char vector
+        %   Path of input directories with respect to `rootDir`
         % - intersectionObj: Intersection
         %   Has `haveIntersection` method
 
         methods_ = {@nn};
+        rootDir = './assets';
+        % todo: default value if it is null
         inputDirs = {};
-        rootDir = './assets/outputs';
+        % todo: default value if it is null
         intersectionObj = [];
+        % todo: add `overwrite` property
     end
     
     methods
@@ -25,27 +28,19 @@ classdef MethodRunner
             
             for indexOfMethod = 1:numel(obj.methods_)
                 method = obj.methods_{indexOfMethod};
+                methodName = func2str(method);
                 
                 for indexOfInputDir = 1:numel(obj.inputDirs)
-                    inputDir = obj.inputDirs{indexOfInputDir};
+                    inputDir = fullfile(...
+                        obj.rootDir, ...
+                        obj.inputDirs{indexOfInputDir} ...
+                    );
                     
                     % list all of input files
                     listing = dir(fullfile(...
                         inputDir, ...
                         '*.mat' ...
                     ));
-                
-                    % path of output directory
-                    [~, inputDirName, ~] = fileparts(inputDir);
-                    outputDir = fullfile(...
-                        obj.rootDir, ...
-                        inputDirName, ...
-                        func2str(method) ...
-                    );
-
-                    if ~exist(outputDir, 'dir')
-                        mkdir(outputDir)
-                    end
                     
                     for indexOfInputFile = 1:numel(listing)
                         inputFile = fullfile(...
@@ -54,23 +49,21 @@ classdef MethodRunner
                         );
                     
                         % load input pionts
-                        points = getfield(load(inputFile), 'points');
+                        sample = load(inputFile);
+                        points = sample.input.points;
                         
                         % elapsed time
                         % - begin time
                         beginTime = cputime();
                         % compute output
-                        output = method(points, obj.intersectionObj);
+                        sample.output.(methodName).output = ...
+                            method(points, obj.intersectionObj);
                         % - end time
-                        elapsedTime = cputime() - beginTime;
+                        sample.output.(methodName).elapsedTime = ...
+                            cputime() - beginTime;
                         
                         % save
-                        outputFile = fullfile(...
-                            outputDir, ...
-                            listing(indexOfInputFile).name ...
-                        );
-                    
-                        save(outputFile, 'elapsedTime', 'output');
+                        save(inputFile, '-struct', 'sample');
                     end
                 end
             end
