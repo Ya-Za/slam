@@ -19,12 +19,13 @@ output = cell(1, numberOfPoints);
 % first point has no previous neighbours
 output{1} = [];
 for indexOfPoint = 2:numberOfPoints
-    output{indexOfPoint} = zeros(1, indexOfPoint - 1, 'logical');
+    output{indexOfPoint} = [];
     currentPoint = points(:, indexOfPoint);
 
     for indexOfNeighbour = 1:(indexOfPoint - 1)
-        output{indexOfPoint}(indexOfNeighbour) = ...
-            intersectionObj.haveIntersection(currentPoint, points(:, indexOfNeighbour));
+        if intersectionObj.haveIntersection(currentPoint, points(:, indexOfNeighbour))
+            output{indexOfPoint}(end + 1) = indexOfNeighbour;
+        end 
     end
 end
 
