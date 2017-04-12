@@ -13,12 +13,12 @@ classdef MethodRunner < handle
         % - intersectionObj: Intersection
         %   Has `haveIntersection` method
 
-        methods_ = {@nn};
+        methods_
         rootDir = './assets';
-        % todo: default value if it is null
-        inputDirs = {};
+        inputDirs
         intersectionObj = Intersection();
         % todo: add `overwrite` property
+        config
     end
     
     methods
@@ -46,8 +46,18 @@ classdef MethodRunner < handle
             obj.init();
             
             for indexOfMethod = 1:numel(obj.methods_)
-                method = obj.methods_{indexOfMethod};
-                methodName = func2str(method);
+                % init time
+                % - begin time
+                beginTime = cputime();
+                methodHnadler = obj.methods_{indexOfMethod};
+                method = methodHnadler(...
+                    obj.intersectionObj, ...
+                    obj.config ...
+                );
+                % - end time
+                initTime = cputime() - beginTime;
+                
+                methodName = func2str(methodHnadler);
                 
                 for indexOfInputDir = 1:numel(obj.inputDirs)
                     inputDir = fullfile(...
@@ -70,18 +80,27 @@ classdef MethodRunner < handle
                         % load input pionts
                         sample = load(inputFile);
                         points = sample.input.points;
+                        numberOfPoints = size(points, 2);
                         
-                        % elapsed time
-                        % - begin time
-                        beginTime = cputime();
                         % compute output
-                        sample.output.(methodName).output = ...
-                            method(points, obj.intersectionObj);
-                        % - end time
-                        sample.output.(methodName).elapsedTime = ...
-                            cputime() - beginTime;
+                        outputs = cell(1, numberOfPoints);
+                        elapsedTimes = zeros(1, numberOfPoints);
+                        for indexOfPoint = 1:numberOfPoints
+                            point = points(:, indexOfPoint);
+                            % elapsed time
+                            % - begin time
+                            beginTime = cputime();
+                            outputs{indexOfPoint} = method.query(point);
+                            % - end time
+                            elapsedTimes(indexOfPoint) = ...
+                                cputime() - beginTime;
+                        end
                         
                         % save
+                        sample.output.(methodName).initTime = initTime;
+                        sample.output.(methodName).outputs = outputs;
+                        sample.output.(methodName).elapsedTimes = elapsedTimes;
+
                         save(inputFile, '-struct', 'sample');
                     end
                 end
