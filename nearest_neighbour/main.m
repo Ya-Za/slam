@@ -15,8 +15,11 @@ numberOfSamples = 10;
 
 radius = 1; % alwasy is 1!
 
-methods_ = {@nn};
-inputDirs = {'s1m10d2n100'}; % todo: can be automated
+addpath('./methods'), methods_ = {@LNN};
+inputDirs = {'s1m10d2n100'};
+config = struct(...
+    'maxDistance', maxDistance ...
+);
 %% Generate and Save Random Walks
 %%
 rw = RandomWalk();
@@ -38,6 +41,7 @@ mr.methods_ = methods_;
 mr.inputDirs = inputDirs;
 mr.rootDir = rootDir;
 mr.intersectionObj = intersectionObj;
+mr.config = config;
 
 mr.run()
 %% End
