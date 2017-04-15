@@ -3,8 +3,8 @@ Yasin
 1. `Viz` class for visulization
     1. `saveVideo` method
     1. `saveImage` method
-    1. `plotAllRandomWalk` method
-    1. plot functions for visualizing otuputs
+    1. `plotOutput`
+    1. candle plot of `times`
 1. Tests methods
 1. Markup `main`
 
