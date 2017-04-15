@@ -56,6 +56,23 @@ classdef Viz < handle
             axis('equal');
         end
         
+        function plotSomeRandomWalks(filenames)
+            numberOfFilenames = numel(filenames);
+            rows = ceil(sqrt(numberOfFilenames));
+            cols = rows;
+            
+            for indexOfFilename = 1:numberOfFilenames
+                filename = filenames{indexOfFilename};
+                sample = load(filename);
+                points = sample.input.points;
+                numberOfPoints = size(points, 2);
+                maxDistance = sample.input.config.maxDistance;
+                
+                subplot(rows, cols, indexOfFilename);
+                Viz.plotRandomWalk(points, maxDistance);
+            end
+        end
+        
         function animateRandomWalk(filename)
             sample = load(filename);
             points = sample.input.points;
@@ -86,6 +103,13 @@ classdef Viz < handle
                 'MarkerFaceColor', color, ...
                 'MarkerEdgeColor', color ...
             );
+        end
+    end
+    
+    methods (Static)
+        function test()
+            % Test methods of `Viz` class
+            runtests('./tests/TestViz.m');
         end
     end
     
