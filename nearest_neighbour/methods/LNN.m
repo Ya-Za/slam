@@ -5,10 +5,10 @@ classdef LNN < BaseNN
     end
     
     methods
-        function obj = LNN(intersectionObj, config)
+        function obj = LNN(intersectionObj, info)
             % Constructor
 
-            obj = obj@BaseNN(intersectionObj, config);
+            obj = obj@BaseNN(intersectionObj, info);
         end
         
         function output = query(obj, point)

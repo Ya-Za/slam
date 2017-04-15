@@ -8,22 +8,22 @@ classdef BaseNN < handle
         %   [p1, p2, ...]
         % - intersectionObj: Intersection
         %   Has `haveIntersection` method
-        % - config: struct
-        %   Extra configuration such as `maxDistance`, `numberOfPoints`,
+        % - info: struct
+        %   Extra information such as `maxDistance`, `numberOfPoints`,
         %   ...
 
         points
         intersectionObj
-        config
+        info
     end
     
     methods
-        function obj = BaseNN(intersectionObj, config)
+        function obj = BaseNN(intersectionObj, info)
             % Constructor
 
             obj.points = {};
             obj.intersectionObj = intersectionObj;
-            obj.config = config;
+            obj.info = info;
         end
     end
     
