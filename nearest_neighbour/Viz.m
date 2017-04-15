@@ -3,16 +3,22 @@ classdef Viz < handle
     
     properties (Constant)
         delay = 0.01;
+        color = struct(...
+            'gray', [0.5, 0.5, 0.5], ...
+            'lightGray', [0.8, 0.8, 0.8], ...
+            'darkRed', [0.5, 0, 0], ...
+            'darkGreen', [0, 0.5, 0], ...
+            'darkBlue', [0, 0, 0.5] ...
+        );
     end
     
     methods (Static)
         function animateRandomWalk(filename)
             % Properties
-            % todo: constant property for Color
-            lineColor = [0.8, 0.8, 0.8]; % light gray
-            firstPointColor = [0.5, 0, 0]; % dark red
-            lastPointColor = [0, 0, 0.5]; % dark blue
-            pointsColor = [0.5, 0.5, 0.5]; % gray
+            lineColor = Viz.color.lightGray;
+            firstPointColor = Viz.color.darkRed;
+            lastPointColor = Viz.color.darkBlue;
+            pointsColor = Viz.color.gray;
             
             sample = load(filename);
             points = sample.input.points;
