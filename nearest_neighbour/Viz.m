@@ -13,7 +13,57 @@ classdef Viz < handle
     end
     
     methods (Static)
-        function plotRandomWalk(points, maxDistance)
+        function h = figure(name)
+            % Create `full screen` figure
+            %
+            % Parameters
+            % ----------
+            % - name: char vector
+            %   Name of figure
+            %
+            % Return
+            % - h: matlab.ui.Figure
+
+            h = figure(...
+                'Name', name, ...
+                'NumberTitle', 'off', ...
+                'Units', 'normalized', ...
+                'OuterPosition', [0, 0, 1, 1] ...
+            );
+        end
+
+        function plotPoint(point, color)
+            % Plot one point
+            %
+            % Parameters
+            % ----------
+            % - point: double vector
+            %   Input point
+            % - color: color
+            %   Point color
+
+            scatter(point(1), point(2), ...
+                'MarkerFaceColor', color, ...
+                'MarkerEdgeColor', color ...
+            );
+        end
+
+        function plotRandomWalk(points, maxDistance, showPoints)
+            % Plot random walk
+            %
+            % Parameters
+            % ----------
+            % - points: double matrix
+            %   [p1, p2, ...]
+            % - maxDistance: double
+            %   Maximum distance. Axes limits is [-maxDistance, maxDistance]
+            % - showPoints: logical = true
+            %   If show intermediate points
+            
+            if ~exist('showPoints', 'var')
+                showPoints = true;
+            end
+            
             % Properties
             lineColor = Viz.color.lightGray;
             firstPointColor = Viz.color.darkRed;
@@ -31,11 +81,13 @@ classdef Viz < handle
             );
             hold('on');
             %   - scatter
-            scatter(...
-                x, y, ...
-                'MarkerFaceColor', pointsColor, ...
-                'MarkerEdgeColor', pointsColor ...
-            );
+            if showPoints
+                scatter(...
+                    x, y, ...
+                    'MarkerFaceColor', pointsColor, ...
+                    'MarkerEdgeColor', pointsColor ...
+                );
+            end
             %   - first point(at origin)
             Viz.plotPoint(points(:, 1), firstPointColor);
             %   - last point
@@ -55,8 +107,17 @@ classdef Viz < handle
             ])
             axis('equal');
         end
-        
+
         function plotSomeRandomWalks(filenames)
+            % Plot grid of random walks
+            %
+            % Parameters
+            % ----------
+            % - filenames: cell array of char vector
+            %   Filenames of random-walks samples
+
+            Viz.figure('Plot Grid of Random-Walks');
+
             numberOfFilenames = numel(filenames);
             rows = ceil(sqrt(numberOfFilenames));
             cols = rows;
@@ -65,15 +126,23 @@ classdef Viz < handle
                 filename = filenames{indexOfFilename};
                 sample = load(filename);
                 points = sample.input.points;
-                numberOfPoints = size(points, 2);
                 maxDistance = sample.input.config.maxDistance;
                 
                 subplot(rows, cols, indexOfFilename);
-                Viz.plotRandomWalk(points, maxDistance);
+                Viz.plotRandomWalk(points, maxDistance, false);
             end
         end
-        
+
         function animateRandomWalk(filename)
+            % Animate random walk
+            %
+            % Parameters
+            % ----------
+            % - filename: char vector
+            %   Filename of random-walks sample
+
+            Viz.figure(['Animate Random-Walk: ', filename]);
+            
             sample = load(filename);
             points = sample.input.points;
             numberOfPoints = size(points, 2);
@@ -87,22 +156,6 @@ classdef Viz < handle
                 
                 pause(Viz.delay);
             end
-        end
-        
-        function plotPoint(point, color)
-            % Plot one point
-            %
-            % Parameters
-            % ----------
-            % - point: double vector
-            %   Input point
-            % - color: color
-            %   Point color
-
-            scatter(point(1), point(2), ...
-                'MarkerFaceColor', color, ...
-                'MarkerEdgeColor', color ...
-            );
         end
     end
     
