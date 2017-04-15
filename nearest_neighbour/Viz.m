@@ -26,11 +26,7 @@ classdef Viz < handle
             maxDistance = sample.input.config.maxDistance;
             
             % first point at origin
-            % todo: create `plotPoint` method
-            scatter(points(1, 1), points(2, 1), ...
-                'MarkerFaceColor', firstPointColor, ...
-                'MarkerEdgeColor', firstPointColor ...
-            );
+            Viz.plotPoint(points(:, 1), firstPointColor);
             hold('on');
             
             % todo: create funciton `plotRandomWalk` and call it in to the
@@ -66,9 +62,23 @@ classdef Viz < handle
                 pause(Viz.delay);
             end
             
-            scatter(points(1, end), points(2, end), ...
-                'MarkerFaceColor', lastPointColor, ...
-                'MarkerEdgeColor', lastPointColor ...
+            % last point
+            Viz.plotPoint(points(:, end), lastPointColor);
+        end
+        
+        function plotPoint(point, color)
+            % Plot one point
+            %
+            % Parameters
+            % ----------
+            % - point: double vector
+            %   Input point
+            % - color: color
+            %   Point color
+
+            scatter(point(1), point(2), ...
+                'MarkerFaceColor', color, ...
+                'MarkerEdgeColor', color ...
             );
         end
     end
