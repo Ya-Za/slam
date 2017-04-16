@@ -25,6 +25,17 @@ classdef BaseNN < handle
             obj.intersectionObj = intersectionObj;
             obj.info = info;
         end
+        
+        function addPointToPoints(obj, point)
+            % Add `point` to `points`
+            %
+            % Parameters
+            % ----------
+            % - point: double vector
+            %   Input point
+
+            obj.points{end + 1} = point;
+        end
     end
     
     methods (Abstract)

@@ -30,7 +30,7 @@ classdef Grid < BaseNN
             
             
             % add `point` to `points`
-            obj.points{end + 1} = point;
+            obj.addPointToPoints(point);
             % add index to `grid`
             obj.addPointToGrid(point);
         end

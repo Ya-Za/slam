@@ -24,7 +24,7 @@ classdef LNN < BaseNN
             end
             
             % add `point` to `points`
-            obj.points{end + 1} = point;
+            obj.addPointToPoints(point);
         end
     end
     
