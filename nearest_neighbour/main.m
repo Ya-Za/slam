@@ -15,9 +15,10 @@ numberOfSamples = 10;
 
 radius = 1; % alwasy is 1!
 
-addpath('./methods'), methods_ = {@LNN};
+addpath('./methods'), methods_ = {@LNN, @Grid};
 inputDirs = {'s1m10d2n100'};
-config = struct(...
+info = struct(...
+    'numberOfDimensions', numberOfDimensions, ...
     'maxDistance', maxDistance ...
 );
 %% Generate and Save Random Walks
@@ -41,7 +42,7 @@ mr.methods_ = methods_;
 mr.inputDirs = inputDirs;
 mr.rootDir = rootDir;
 mr.intersectionObj = intersectionObj;
-mr.config = config;
+mr.info = info;
 
 mr.run()
 %% End
