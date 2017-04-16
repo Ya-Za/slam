@@ -18,7 +18,7 @@ classdef MethodRunner < handle
         inputDirs
         intersectionObj = Intersection();
         % todo: add `overwrite` property
-        config
+        info
     end
     
     methods
@@ -52,7 +52,7 @@ classdef MethodRunner < handle
                 methodHnadler = obj.methods_{indexOfMethod};
                 method = methodHnadler(...
                     obj.intersectionObj, ...
-                    obj.config ...
+                    obj.info ...
                 );
                 % - end time
                 initTime = cputime() - beginTime;
