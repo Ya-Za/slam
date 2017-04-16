@@ -26,6 +26,7 @@ classdef TestViz < matlab.unittest.TestCase
     end
 
     methods (Test)
+        % todo: put to `methods (Test)` with tag `Utils`
         function test_figure(testCase)
             % arrange
             name = 'Test: Viz.figure';
@@ -35,6 +36,23 @@ classdef TestViz < matlab.unittest.TestCase
             
             % assert
             testCase.assertEqual(h.Name, name);
+        end
+        
+        function test_getFilenames(testCase)
+            % arrange
+            folder = './data';
+
+            % act
+            actualValue = Viz.getFilenames(folder);
+            
+            % assert
+            expectedValue = arrayfun(...
+                @(x) fullfile(x.folder, x.name), ...
+                dir(fullfile(folder, '*.mat')), ...
+                'UniformOutput', false ...
+            );
+            
+            testCase.assertEqual(actualValue, expectedValue);
         end
 
         function test_plotPoint(testCase)
@@ -87,6 +105,61 @@ classdef TestViz < matlab.unittest.TestCase
             
             % act
             Viz.animateRandomWalk(filename);
+            
+            % assert
+            testCase.assertTrue(true);
+        end
+        
+        function test_plotTimeOfRandomWalk(testCase)
+            % arrange
+            filename = './data/1.mat';
+            
+            % act
+            Viz.plotTimeOfRandomWalk(filename);
+            
+            % assert
+            testCase.assertTrue(true);
+        end
+        
+        function test_getAveragedElapsedTimes(testCase)
+            % arrange
+            % filenames = Viz.getFilenames('./data');
+        
+            % act
+            % todo: write `act`
+            
+            % assert
+            testCase.assertTrue(true);
+        end
+        
+        function test_plotTimeOfSomeRandomWalks(testCase)
+            % arrange
+            filenames = Viz.getFilenames('./data');
+        
+            % act
+            Viz.plotTimeOfSomeRandomWalks(filenames);
+            
+            % assert
+            testCase.assertTrue(true);
+        end
+        
+        function test_plotBoxOfElapsedTimes(testCase)
+            % arrange
+            filenames = Viz.getFilenames('./data');
+        
+            % act
+            Viz.plotBoxOfElapsedTimes(filenames);
+            
+            % assert
+            testCase.assertTrue(true);
+        end
+        
+        function test_plotBoxOfOverallElapsedTimes(testCase)
+            % arrange
+            filenames = Viz.getFilenames('./data');
+        
+            % act
+            Viz.plotBoxOfOverallElapsedTimes(filenames);
             
             % assert
             testCase.assertTrue(true);
