@@ -63,7 +63,7 @@ classdef RandomWalk < handle
                 value <= obj.maxDistance;
         end
         
-        function saveSamples(obj, outDir, numberOfSamples)
+        function outDir = saveSamples(obj, outDir, numberOfSamples)
             % Generate and save random walk samples
             %
             % Parameters
@@ -72,6 +72,11 @@ classdef RandomWalk < handle
             %   Path of output directory
             % - numberOfSamples: int = 100
             %   Number of random walk samples
+            %
+            % Returns
+            % -------
+            % - outDir: char vector
+            %   Maked output directory
             
             % default values
             % - outDir
