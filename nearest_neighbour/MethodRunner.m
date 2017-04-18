@@ -15,6 +15,7 @@ classdef MethodRunner < handle
 
         methods_
         rootDir = './assets';
+        % todo: convert to `inputDir` just for one dir
         inputDirs
         intersectionObj = Intersection();
         % todo: add `overwrite` property
@@ -44,44 +45,43 @@ classdef MethodRunner < handle
             
             % init
             obj.init();
-            
-            for indexOfMethod = 1:numel(obj.methods_)
-                % init time
-                % - begin time
-                beginTime = cputime();
-                methodHnadler = obj.methods_{indexOfMethod};
-                method = methodHnadler(...
-                    obj.intersectionObj, ...
-                    obj.info ...
+
+            for indexOfInputDir = 1:numel(obj.inputDirs)
+                inputDir = fullfile(...
+                    obj.rootDir, ...
+                    obj.inputDirs{indexOfInputDir} ...
                 );
-                % - end time
-                initTime = cputime() - beginTime;
-                
-                methodName = func2str(methodHnadler);
-                
-                for indexOfInputDir = 1:numel(obj.inputDirs)
-                    inputDir = fullfile(...
-                        obj.rootDir, ...
-                        obj.inputDirs{indexOfInputDir} ...
+
+                % list all of input files
+                listing = dir(fullfile(...
+                    inputDir, ...
+                    '*.mat' ...
+                ));
+
+                for indexOfInputFile = 1:numel(listing)
+                    inputFile = fullfile(...
+                        listing(indexOfInputFile).folder, ...
+                        listing(indexOfInputFile).name ...
                     );
-                    
-                    % list all of input files
-                    listing = dir(fullfile(...
-                        inputDir, ...
-                        '*.mat' ...
-                    ));
-                    
-                    for indexOfInputFile = 1:numel(listing)
-                        inputFile = fullfile(...
-                            listing(indexOfInputFile).folder, ...
-                            listing(indexOfInputFile).name ...
+
+                    % load input pionts
+                    sample = load(inputFile);
+                    points = sample.input.points;
+                    numberOfPoints = size(points, 2);
+
+                    for indexOfMethod = 1:numel(obj.methods_)
+                        % init time
+                        % - begin time
+                        beginTime = cputime();
+                        methodHnadler = obj.methods_{indexOfMethod};
+                        method = methodHnadler(...
+                            obj.intersectionObj, ...
+                            obj.info ...
                         );
-                    
-                        % load input pionts
-                        sample = load(inputFile);
-                        points = sample.input.points;
-                        numberOfPoints = size(points, 2);
-                        
+                        % - end time
+                        initTime = cputime() - beginTime;
+
+                        methodName = func2str(methodHnadler);
                         % compute output
                         outputs = cell(1, numberOfPoints);
                         elapsedTimes = zeros(1, numberOfPoints);
@@ -95,7 +95,7 @@ classdef MethodRunner < handle
                             elapsedTimes(indexOfPoint) = ...
                                 cputime() - beginTime;
                         end
-                        
+
                         % save
                         sample.output.(methodName).initTime = initTime;
                         sample.output.(methodName).outputs = outputs;
@@ -107,5 +107,4 @@ classdef MethodRunner < handle
             end
         end
     end
-    
 end
