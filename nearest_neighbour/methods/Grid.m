@@ -120,7 +120,11 @@ classdef Grid < BaseNN
             %   Target point
 
             bottomLeftPosition = floor(point / obj.gridResolution);
-            neighbourPositions = bottomLeftPosition + obj.steps;
+            % neighbourPositions = bottomLeftPosition + obj.steps;
+            % < 2017
+            neighbourPositions = ...
+                repmat(bottomLeftPosition, 1, obj.numberOfNeighbourPositions) + ...
+                obj.steps;
 
             % todo: replace concatenation with `import
             % java.util.LinkedList`
