@@ -19,12 +19,17 @@ classdef Viz < handle
             %
             % Parameters
             % ----------
-            % - name: char vector
+            % - name: char vector = ''
             %   Name of figure
             %
             % Return
             % - h: matlab.ui.Figure
 
+            % default values
+            if ~exist('name', 'var')
+                name = '';
+            end
+            
             h = figure(...
                 'Name', name, ...
                 'NumberTitle', 'off', ...
@@ -33,12 +38,12 @@ classdef Viz < handle
             );
         end
         
-        function filenames = getFilenames(folder, format)
+        function filenames = getFilenames(rootDir, format)
             % Get filenames with specified `format` in given `foler` 
             %
             % Parameters
             % ----------
-            % - foler: char vector
+            % - rootDir: char vector
             %   Target folder
             % - format: char vector = 'mat'
             %   File foramt
@@ -49,7 +54,7 @@ classdef Viz < handle
             end
             
             format = ['*.', format];
-            filenames = dir(fullfile(folder, format));
+            filenames = dir(fullfile(rootDir, format));
             filenames = arrayfun(...
                 @(x) fullfile(x.folder, x.name), ...
                 filenames, ...
@@ -114,6 +119,172 @@ classdef Viz < handle
             
             meanElapsedTimes = mean(stackOfElapsedTimes);
             stdElapsedTimes = std(stackOfElapsedTimes);
+        end
+        
+        function matrixOfOutputs = getMatrixOfOutputs(filename, methodName)
+            % Plot `outputs` of a specified `method`
+            %
+            % Parameters
+            % ----------
+            % - filename: char vector
+            %   Filename of random-walks sample
+            % - methodName: char vector
+            %   Name of target method
+            %
+            % Returns
+            % ------
+            % - matrixOfOutputs = logical matrix
+            %   Each entry shows if there is an intersection
+            
+            % load `outputs`
+            sample = load(filename);
+            outputs = sample.output.(methodName).outputs;
+            numberOfPoints = numel(outputs);
+            
+            % crate `matrix of outputs`
+            matrixOfOutputs = zeros(numberOfPoints, 'logical');
+            for indexOfPoint = 1:numberOfPoints
+                matrixOfOutputs(indexOfPoint, outputs{indexOfPoint}) = true;
+            end
+        end
+        
+        function lowerTriangleElements = getLowerTriangleElements(X)
+            % Get lower triangle elements of a given square matrix
+            %
+            % Parameters
+            % ----------
+            % - X: double matrix
+            %   Input matrix
+            %
+            % Returns
+            % -------
+            % - lowerTriangleElements: double vector
+            %   Elements of lower trianle of given matrix
+            
+            lowerTriangleElements = X(tril(ones(size(X), 'logical')));
+        end
+        
+        function confusionMatrix = getConfusionMatrix(filename, methodName)
+            % Get `confusion matrix` of specified `method`
+            %
+            % Parameters
+            % ----------
+            % - filename: char vector
+            %   Filename of random-walks sample
+            % - methodName: char vector
+            %   Name of target method
+            %
+            % Returns
+            % ------
+            % - confusionMatrix: int 2x2 matrix
+            %   Confusion matrix. Groundtruth is `LNN` method
+            
+            % load `method`
+            sample = load(filename);
+            method = sample.output.(methodName);
+            
+            % check if `confusion matrix` is computed
+            if isfield(method, 'confusionMatrix')
+                confusionMatrix = method.confusionMatrix;
+                return
+            end
+            
+            % compute `computatin matrix`
+            %   - load `matrix of outpus` of `LNN`
+            lnnMatrixOfOutputs = ...
+                Viz.getMatrixOfOutputs(filename, 'LNN');
+            %   - load `matrix of outputs` of target `method`
+            methodMatrixOfOutputs = ...
+                Viz.getMatrixOfOutputs(filename, methodName);
+            
+            %   - confusion matrix
+            confusionMatrix = confusionmat(...
+                Viz.getLowerTriangleElements(lnnMatrixOfOutputs), ...
+                Viz.getLowerTriangleElements(methodMatrixOfOutputs) ...
+            );
+        end
+        
+        function confusionMatrix = getOverallConfusionMatrix(filenames, methodName)
+            % Get `confusion matrix` of specified `method`
+            %
+            % Parameters
+            % ----------
+            % - filenames: cell array of char vector
+            %   Filenames of random-walks samples
+            % - methodName: char vector
+            %   Name of target method
+            %
+            % Returns
+            % ------
+            % - confusionMatrix: int 2x2 matrix
+            %   Confusion matrix. Groundtruth is `LNN` method
+            
+            numberOfFilenames = numel(filenames);
+            confusionMatrix = zeros(2);
+            
+            for indexOfFilename = 1:numberOfFilenames
+                filename = filenames{indexOfFilename};
+                confusionMatrix = ...
+                    confusionMatrix + ...
+                    Viz.getConfusionMatrix(filename, methodName);
+            end
+        end 
+        
+        % todo: I think it should be better to change the `Viz` to
+        % non-static class because `filenames` are common between some
+        % methods
+        function addConfusionMatrixes(filenames)
+            % Add `confusion matrixes` to samples
+            %
+            % Parameters
+            % ----------
+            % - filenames: cell array of char vector
+            %   Filenames of random-walks samples
+            
+            numberOfFilenames = numel(filenames);
+
+            for indexOfFilename = 1:numberOfFilenames
+                filename = filenames{indexOfFilename};
+                sample = load(filename);
+                
+                methodNames = fieldnames(sample.output);
+                numberOfMethods = numel(methodNames);
+
+                % for each `method`
+                for indexOfMethodName = 1:numberOfMethods
+                    methodName = methodNames{indexOfMethodName};
+
+                    sample.output.(methodName).confusionMatrix = ...
+                        Viz.getConfusionMatrix(filename, methodName);
+                end
+                
+                % save sample
+                save(filename, '-struct', 'sample');
+            end
+        end
+        
+        function [targetValues, outputValues] = ...
+                getTargetOutputValues(confusionMatrix)
+            % Get `target`, `output` values from `confusion matrix`
+            %
+            % Parameters
+            % ----------
+            % - confusionMatrix: int 2x2 matrix
+            %   Confusion matrix. Groundtruth is `LNN` method
+            
+            numberOfPoints = sum(confusionMatrix(:));
+            numberOfTrueZeros = sum(confusionMatrix(1, :));
+            
+            % target values
+            targetValues = ones(1, numberOfPoints, 'logical');
+            targetValues(1:numberOfTrueZeros) = false;
+            
+            % output values
+            outputValues = ones(1, numberOfPoints, 'logical');
+            % true negative
+            outputValues(1:confusionMatrix(1, 1)) = false;
+            % false negative
+            outputValues(end + 1 - confusionMatrix(2, 1):end) = false;
         end
     end
     
@@ -195,17 +366,28 @@ classdef Viz < handle
             axis('equal');
         end
 
-        function plotSomeRandomWalks(filenames)
+        function plotSomeRandomWalks(filenames, maxNumberOfSamples)
             % Plot grid of random walks
             %
             % Parameters
             % ----------
             % - filenames: cell array of char vector
             %   Filenames of random-walks samples
+            % - maxNumberOfSamples: int = 100
+            %   Maximum number of sample reandom-walks
+            
+            % default values
+            if ~exist('maxNumberOfSamples', 'var')
+                maxNumberOfSamples = 100;
+            end
 
+            % figure
             Viz.figure('Plot Grid of Random-Walks');
 
-            numberOfFilenames = numel(filenames);
+            numberOfFilenames = min(...
+                numel(filenames), ...
+                maxNumberOfSamples ...
+            );
             rows = ceil(sqrt(numberOfFilenames));
             cols = rows;
             
@@ -284,6 +466,7 @@ classdef Viz < handle
             grid('minor');
         end
         
+        % todo: rename `plotTime` to `plotElapsedTimes`
         function plotTimeOfSomeRandomWalks(filenames, showErrorBars)
             % Plot averaged `elapsed times` with error bar of a some 
             % random-walk samples for all `methods`
@@ -338,6 +521,7 @@ classdef Viz < handle
             grid('minor');
         end
         
+        % todo: rename `plotBox` to `boxPlot`
         function plotBoxOfElapsedTimes(filenames)
             % Box plot of `elapsed times` of a some 
             % random-walk samples for all `methods`
@@ -369,9 +553,12 @@ classdef Viz < handle
                 );
                 title(methodName);
                 ylabel('Time (sec)');
+                grid('on');
+                grid('minor');
             end
         end
         
+        % todo: rename `plotBox` to `boxPlot`
         function plotBoxOfOverallElapsedTimes(filenames)
             % Box plot of overall `elapsed times` of a some 
             % random-walk samples for all `methods`
@@ -409,6 +596,158 @@ classdef Viz < handle
             ylabel('Time (sec)');
             grid('on');
             grid('minor');
+        end
+        
+        function plotOutputsOfMethod(filenames, methodName, maxNumberOfSamples)
+            % Plot `outputs` of a specified `method`
+            %
+            % Parameters
+            % ----------
+            % - filenames: cell array of char vector
+            %   Filenames of random-walks samples
+            % - methodName: char vector
+            %   Name of target method
+            % - maxNumberOfSamples: int = 100
+            %   Maximum number of sample reandom-walks
+
+            % default values
+            if ~exist('maxNumberOfSamples', 'var')
+                maxNumberOfSamples = 100;
+            end
+
+            % figure
+            Viz.figure(['Outputs of ', methodName]);
+            
+            numberOfFilenames = min(...
+                numel(filenames), ...
+                maxNumberOfSamples ...
+            );
+            rows = ceil(sqrt(numberOfFilenames));
+            cols = rows;
+            
+            for indexOfFilename = 1:numberOfFilenames
+                filename = filenames{indexOfFilename};
+            
+                % matrix of outputs
+                matrixOfOutputs = ...
+                    Viz.getMatrixOfOutputs(filename, methodName);
+
+                % show image
+                subplot(rows, cols, indexOfFilename);
+                imagesc(matrixOfOutputs);
+                % colormap('hot');
+                axis('equal');
+                axis('off');
+            end
+        end
+        
+        function plotErrorMatrixOfMethod(filename, methodName)
+            % Plot `error matrix` of a specified `method`
+            %
+            % Parameters
+            % ----------
+            % - filename: char vector
+            %   Filename of random-walks sample
+            % - methodName: char vector
+            %   Name of target method
+
+            % figure
+            Viz.figure(sprintf(...
+                'Error Matrix of Method - %s: %s', ...
+                methodName, ...
+                filename ...
+            ));
+            
+            % error matrix
+            errorMatrix = ...
+                Viz.getMatrixOfOutputs(filename, 'LNN') - ...
+                Viz.getMatrixOfOutputs(filename, methodName);
+            
+            % show image
+            % imshow(matrixOfOutputs);
+            imagesc(errorMatrix);
+            colormap('hot');
+            axis('equal');
+            axis('off');
+        end
+        
+        function plotConfusionMatrixOfMethods(filenames)
+            % Plot `confusion matrix` for each `method`
+            %
+            % Parameters
+            % ----------
+            % - filenames: cell array of char vector
+            %   Filenames of random-walks samples
+            
+            % load method names
+            sample = load(filenames{1});
+            methodNames = fieldnames(sample.output);
+            numberOfMethods = numel(methodNames);
+            
+            % `target`, `output`, `name` array
+            data = {};
+            for indexOfMethodName = 1:numberOfMethods
+                methodName = methodNames{indexOfMethodName};
+                confusionMatrix = ...
+                    Viz.getOverallConfusionMatrix(filenames, methodName);
+                
+                % `targe` and `output` values
+                [targetValues, outputValues] = ...
+                    Viz.getTargetOutputValues(confusionMatrix);
+                
+                data{end + 1} = targetValues;
+                data{end + 1} = outputValues;
+                data{end + 1} = methodName;
+            end
+            
+            % plot
+            plotconfusion(data{:});
+        end
+    end
+    
+    % Save
+    methods (Static)
+        function saveResults(rootDir)
+            % Make `results` folder in `roodDir` folder and save some
+            % `results` in it
+            %
+            % Parameters
+            % ----------
+            % - rootDir: char vector
+            %   Path of input directory
+            
+            % `results` folder
+            outDir = fullfile(rootDir, 'results');
+            if ~exist(outDir, 'dir')
+                mkdir(outDir);
+            end
+            
+            % filenames
+            filenames = Viz.getFilenames(rootDir);
+            
+            % random-walks
+            Viz.plotSomeRandomWalks(filenames);
+            savefig(fullfile(outDir, 'random_walks'));
+            
+            % elapsed-times
+            Viz.plotTimeOfSomeRandomWalks(filenames);
+            savefig(fullfile(outDir, 'elapsed_times'));
+            
+            % box-plot of ellapsed-times
+            Viz.plotBoxOfElapsedTimes(filenames);
+            savefig(fullfile(outDir, 'box_plot_elapsed_times'));
+            
+            % overall box-plot of ellapsed-times
+            Viz.plotBoxOfOverallElapsedTimes(filenames);
+            savefig(fullfile(outDir, 'box_plot_overall_elapsed_times'));
+            
+            % outputs matrices of `LNN`
+            Viz.plotOutputsOfMethod(filenames, 'LNN');
+            savefig(fullfile(outDir, 'outputs_matrices_lnn'));
+            
+            % confusion-matrices
+            Viz.plotConfusionMatrixOfMethods(filenames);
+            savefig(fullfile(outDir, 'confusion_matrices'));
         end
     end
 
