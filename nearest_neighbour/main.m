@@ -4,6 +4,7 @@
 close('all');
 clear();
 clc();
+addpath('./methods');
 %% Load and Run `Config` files
 %%
 configsDir = './assets/configs';
