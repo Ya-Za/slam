@@ -512,6 +512,7 @@ classdef Viz < handle
             numberOfMethods = numel(methodNames);
             
             % for each `method`
+            hold('on');
             for indexOfMethodName = 1:numberOfMethods
                 methodName = methodNames{indexOfMethodName};
                 [meanElapsedTimes, stdElapsedTimes] = ...
@@ -531,6 +532,7 @@ classdef Viz < handle
                     );
                 end
             end
+            hold('off');
             
             % config plot
             legend('show');
