@@ -164,6 +164,79 @@ classdef TestViz < matlab.unittest.TestCase
             % assert
             testCase.assertTrue(true);
         end
+        
+        function test_plotOutputsOfMethod(testCase)
+            % arrange
+            filenames = Viz.getFilenames('./data');
+            methodName = 'LNN';
+        
+            % act
+            Viz.plotOutputsOfMethod(filenames, methodName);
+            
+            % assert
+            testCase.assertTrue(true);
+        end
+        
+        function test_addConfusionMatrixes(testCase)
+            % arrange
+            filenames = Viz.getFilenames('./data');
+        
+            % act
+            Viz.addConfusionMatrixes(filenames);
+            
+            % assert
+            testCase.assertTrue(true);
+        end
+        
+        function test_getTargetOutputValues(testCase)
+            % arrange
+            confusionMatrix = [1, 2; 3, 4];
+            expectedTargetValues = logical([0, 0, 0, 0, 1, 1, 1, 1, 1, 1])';
+            expectedOutputValues = logical([0, 1, 1, 1, 1, 1, 1, 1, 0, 0])';
+        
+            % act
+            [actualTargetValues, actualOutputValues] = ...
+                Viz.getTargetOutputValues(confusionMatrix);
+            
+            % assert
+            testCase.assertEqual(expectedTargetValues, actualTargetValues);
+            testCase.assertEqual(expectedOutputValues, actualOutputValues);
+        end
+        
+        function test_plotConfusionMatrixOfMethods(testCase)
+            % arrange
+            % filenames = Viz.getFilenames('./data');
+            filenames = {'./data/3.mat'};
+        
+            % act
+            Viz.plotConfusionMatrixOfMethods(filenames);
+            
+            % assert
+            testCase.assertTrue(true);
+        end
+        
+        function test_plotErrorMatrixOfMethod(testCase)
+            % arrange
+            filename = './data/3.mat';
+            methodName = 'Grid';
+        
+            % act
+            Viz.plotErrorMatrixOfMethod(filename, methodName);
+            
+            % assert
+            testCase.assertTrue(true);
+        end
+        
+        function test_saveResults(testCase)
+            % arrange
+            rootDir = './data';
+        
+            % act
+            Viz.saveResults(rootDir);
+            
+            % assert
+            testCase.assertTrue(true);
+        end
     end
     
 end
