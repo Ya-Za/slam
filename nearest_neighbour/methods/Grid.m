@@ -31,7 +31,9 @@ classdef Grid < BaseNN
             
             obj.numberOfNeighbourPositions = size(obj.steps, 2);
             
-            obj.gridResolution = sqrt(2);
+            % todo: input argument to constructor
+            % obj.gridResolution = sqrt(2);
+            obj.gridResolution = 2;
             
             maxDistance = obj.info.maxDistance;
             gridLength = ceil(2 * maxDistance / obj.gridResolution);
