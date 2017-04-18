@@ -4,47 +4,49 @@
 close('all');
 clear();
 clc();
-%% Parameters
+%% Load and Run `Config` files
 %%
-std = 1;
-maxDistance = 10;
-numberOfPoints = 100;
-numberOfDimensions = 2;
-rootDir = './assets';
-numberOfSamples = 10;
+configsDir = './assets/configs';
+filenames = Viz.getFilenames(configsDir);
+numberOfFilenames = numel(filenames);
 
-radius = 1; % alwasy is 1!
+for indexOfFilename = 1:numberOfFilenames
+    filename = filenames{indexOfFilename};
+    config = load(filename);
+    
+    % begin message
+    fprintf('(%d/%d) : %s\n', indexOfFilename, numberOfFilenames, filename);
+    
+    tic();
+    % generate and save random-walks
+    rw = RandomWalk();
+    rw.std = config.std;
+    rw.maxDistance = config.maxDistance;
+    rw.numberOfPoints = config.numberOfPoints;
+    rw.numberOfDimensions = config.numberOfDimensions;
+    
+    rootDir = rw.saveSamples(config.rootDir, config.numberOfSamples);
+    
+    % run methods
+    % - intersection object
+    intersectionObj = Intersection();
+    intersectionObj.radius = config.radius;
 
-addpath('./methods'), methods_ = {@LNN, @Grid};
-inputDirs = {'s1m10d2n100'};
-info = struct(...
-    'numberOfDimensions', numberOfDimensions, ...
-    'maxDistance', maxDistance ...
-);
-%% Generate and Save Random Walks
-%%
-rw = RandomWalk();
-rw.std = std;
-rw.maxDistance = maxDistance;
-rw.numberOfPoints = numberOfPoints;
-rw.numberOfDimensions = numberOfDimensions;
+    % - MethodRunner
+    mr = MethodRunner();
+    mr.methods_ = config.methods;
+    mr.rootDir = rootDir;
+    mr.intersectionObj = intersectionObj;
+    mr.info = config.info;
 
-% rw.saveSamples(rootDir, numberOfSamples);
-%% Run Methods
-%%
-% Intersection
-intersectionObj = Intersection();
-intersectionObj.radius = radius;
+    mr.run();
+    
+    % save results
+    Viz.saveResults(rootDir);
+    
+    toc();
+end
 
-% MethodRunner
-mr = MethodRunner();
-mr.methods_ = methods_;
-mr.inputDirs = inputDirs;
-mr.rootDir = rootDir;
-mr.intersectionObj = intersectionObj;
-mr.info = info;
-
-mr.run()
 %% End
 %%
 disp('End.');
