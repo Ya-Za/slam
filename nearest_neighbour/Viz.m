@@ -134,8 +134,8 @@ classdef Viz < handle
             stackOfElapsedTimes = ...
                 Viz.getStackOfElapsedTimes(filenames, methodName);
             
-            meanElapsedTimes = mean(stackOfElapsedTimes);
-            stdElapsedTimes = std(stackOfElapsedTimes);
+            meanElapsedTimes = mean(stackOfElapsedTimes, 1);
+            stdElapsedTimes = std(stackOfElapsedTimes, 1);
         end
         
         function matrixOfOutputs = getMatrixOfOutputs(filename, methodName)
