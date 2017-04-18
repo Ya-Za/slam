@@ -62,6 +62,23 @@ classdef Viz < handle
             );
         end
         
+        function subdirs = getSubdirs(rootDir)
+            % Get sub directories
+            % Parameters
+            % ----------
+            % - rootDir: char vector
+            %   Root directory
+            
+            % `rootDir` is given
+            subdirs = dir(rootDir);
+            % remove `.` and `..`
+            subdirs(1:2) = [];
+            % select just directories not files
+            subdirs = subdirs([obj.dirs.isdir]);
+            % select name of directories
+            subdirs = {subdirs.name};
+        end
+        
         % todo: output for all `method`
         function stackOfElapsedTimes = ...
                 getStackOfElapsedTimes(filenames, methodName)
