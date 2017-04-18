@@ -20,7 +20,7 @@ classdef Grid < BaseNN
     end
     
     methods
-        function obj = Grid(intersectionObj, info)
+        function obj = Grid(intersectionObj, info, params)
             % Constructor
 
             % super-class constructor
@@ -33,7 +33,7 @@ classdef Grid < BaseNN
             
             % todo: input argument to constructor
             % obj.gridResolution = sqrt(2);
-            obj.gridResolution = 2;
+            obj.gridResolution = params.gridResolution;
             
             maxDistance = obj.info.maxDistance;
             gridLength = ceil(2 * maxDistance / obj.gridResolution);

@@ -5,7 +5,7 @@ classdef LNN < BaseNN
     end
     
     methods
-        function obj = LNN(intersectionObj, info)
+        function obj = LNN(intersectionObj, info, params)
             % Constructor
 
             obj = obj@BaseNN(intersectionObj, info);
