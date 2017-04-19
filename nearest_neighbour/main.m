@@ -12,6 +12,7 @@ filenames = Viz.getFilenames(configsDir);
 numberOfFilenames = numel(filenames);
 
 for indexOfFilename = 1:numberOfFilenames
+    % todo: save `config` file in the folder of results
     filename = filenames{indexOfFilename};
     config = load(filename);
     
