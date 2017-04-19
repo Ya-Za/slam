@@ -237,6 +237,17 @@ classdef TestViz < matlab.unittest.TestCase
             % assert
             testCase.assertTrue(true);
         end
+        
+        function test_printSummary(testCase)
+            % arrange
+            filenames = Viz.getFilenames('./data');
+        
+            % act
+            Viz.printSummary(filenames);
+            
+            % assert
+            testCase.assertTrue(true);
+        end
     end
     
 end
