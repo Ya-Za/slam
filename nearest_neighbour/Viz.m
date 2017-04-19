@@ -722,6 +722,104 @@ classdef Viz < handle
             % plot
             plotconfusion(data{:});
         end
+        
+        function configTable = getConfigTable(filename)
+            % Get table of `configuration`
+            %
+            % Parameters
+            % ----------
+            % - filename: char vector
+            %   Filename of random-walks sample
+            %
+            % Returns
+            % -------
+            % - configTable: table
+            %   Table of configuration
+            
+            % load
+            sample = load(filename);
+            config = sample.input.config;
+            
+            params = {...
+                'Standard Deviation'; ...
+                'Max Distance'; ...
+                'Number of Points'; ...
+                'Number of Dimensions' ...
+            };
+        
+            values = [...
+                config.std; ...
+                config.maxDistance; ...
+                config.numberOfPoints; ...
+                config.numberOfDimensions ...
+            ];
+        
+            configTable = table(...
+                params, ...
+                values, ...
+                'VariableNames', {'Params', 'Values'} ...
+            );
+        
+            configTable.Properties.Description = 'Config';
+        end
+        
+        function elapsedTimesTable = getelapsedTimesTable(filenames)
+            % Get table of `configuration`
+            %
+            % Parameters
+            % ----------
+            % - filenames: cell array of char vector
+            %   Filenames of random-walks samples
+            %
+            % Returns
+            % -------
+            % - elapsedTimesTable: table
+            %   Table of elapsed-times (sec) [mean, std]
+            
+            % load method names
+            sample = load(filenames{1});
+            methodNames = fieldnames(sample.output);
+            numberOfMethods = numel(methodNames);
+            
+            % `target`, `output`, `name` array
+            elapsedTimes = zeros(numberOfMethods, 2);
+            for indexOfMethodName = 1:numberOfMethods
+                methodName = methodNames{indexOfMethodName};
+                [meanElapsedTimes, stdElapsedTimes] = ...
+                    Viz.getAveragedElapsedTimes(filenames, methodName);
+                
+                elapsedTimes(indexOfMethodName, :) = ...
+                    [sum(meanElapsedTimes), sum(stdElapsedTimes)];
+            end
+            
+            % load
+            elapsedTimesTable = table(...
+                methodNames, ...
+                elapsedTimes, ...
+                'VariableNames', {'Method', 'Elapsed_Times'} ...
+            );
+        
+            elapsedTimesTable.Properties.Description = 'Elapsed-Times';
+        end
+        
+        function printSummary(filenames)
+            % Print summary of results
+            %
+            % Parameters
+            % ----------
+            % - filenames: cell array of char vector
+            %   Filenames of random-walks samples
+            
+            % config
+            disp('Config Table');
+            configTable = Viz.getConfigTable(filenames{1});
+            disp(configTable);
+            
+            % elapsed-times
+            disp('Elapsed-Times Table');
+            elapsedTimesTable = Viz.getelapsedTimesTable(filenames);
+            disp(elapsedTimesTable);
+        end
     end
     
     % Save
