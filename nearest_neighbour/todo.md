@@ -7,10 +7,13 @@ Yasin
 1. Tests methods
 1. Markup `main`
 1. mex file
+1. Save `config` file
+1. `Print summary` in each run
+1. parallel processing
+
 
 Hamed
 =====
 1. K-d Tree with `add` and `rangeBall` methods
 1. check time difference between `append to array`, `append to cell array`, `...`
-1. Design a golder senario :)
-
+1. Design a golden senario :)
