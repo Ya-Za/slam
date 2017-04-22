@@ -49,7 +49,10 @@ for indexOfFilename = 1:numberOfFilenames
 
     mr.run();
     
-    % save results
+    % visualize
+    % - print summary
+    Viz.printSummary(parentOfSamplesDir);
+    % - show and save results
     Viz.saveResults(samplesDir);
     
     toc();
