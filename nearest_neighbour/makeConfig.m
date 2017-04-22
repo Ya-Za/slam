@@ -7,11 +7,9 @@ clc();
 %%
 std = 1;
 maxDistance = 20;
-numberOfPoints = 1000;
+numberOfPoints = 10;
 numberOfDimensions = 2;
-numberOfSamples = 1;
-rootDir = './assets';
-
+numberOfSamples = 5;
 radius = 1; % alwasy is 1!
 
 addpath('./methods'); 
@@ -32,7 +30,7 @@ info = struct(...
 );
 
 configsDir = './assets/configs';
-configFilename = '3';
+configFilename = '1';
 %% Config
 %%
 % add `methods` to `path`
@@ -44,7 +42,6 @@ config = struct(...
     'numberOfPoints', numberOfPoints, ...
     'numberOfDimensions', numberOfDimensions, ...
     'numberOfSamples', numberOfSamples, ...
-    'rootDir', rootDir, ...
     'radius', radius, ...
     'methods', methods_, ...
     'info', info...
