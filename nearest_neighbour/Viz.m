@@ -834,7 +834,8 @@ classdef Viz < handle
             %   Path of input directory
             
             % `results` folder
-            outDir = fullfile(rootDir, 'results');
+            [parentOfRootDir, ~, ~] = fileparts(rootDir);
+            outDir = fullfile(parentOfRootDir, 'results');
             if ~exist(outDir, 'dir')
                 mkdir(outDir);
             end
