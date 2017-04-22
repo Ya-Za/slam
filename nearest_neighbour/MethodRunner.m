@@ -31,7 +31,7 @@ classdef MethodRunner < handle
                 '*.mat' ...
             ));
 
-            for indexOfFilenames = 1:numel(filenames)
+            parfor indexOfFilenames = 1:numel(filenames)
                 filename = fullfile(...
                     obj.rootDir, ...
                     filenames(indexOfFilenames).name ...
@@ -75,9 +75,26 @@ classdef MethodRunner < handle
                     sample.output.(methodName).outputs = outputs;
                     sample.output.(methodName).elapsedTimes = elapsedTimes;
 
-                    save(filename, '-struct', 'sample');
+                    % `save(filename, '-struct', 'sample')` can not be call
+                    % in `parfor` loop
+                    MethodRunner.safeSave(filename, sample);
                 end
             end
+        end
+    end
+    
+    methods (Static)
+        function safeSave(filename, value)
+            % Save end of `parloop`
+            %
+            % Parameters
+            % ----------
+            % - filename: char vector
+            %   Filename of output file
+            % - value: struct
+            %   Value have to be saved
+            
+            save(filename, '-struct', 'value');
         end
     end
 end

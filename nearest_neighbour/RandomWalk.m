@@ -111,7 +111,7 @@ classdef RandomWalk < handle
             % - get number of previous saved samples
             lastNumberOfSamples = numel(dir(fullfile(outDir, '*.mat')));
             
-            for indexOfSample = (lastNumberOfSamples + 1):numberOfSamples
+            parfor indexOfSample = (lastNumberOfSamples + 1):numberOfSamples
                 points = obj.getPoints();
                 outFile = fullfile(...
                     outDir, ...
