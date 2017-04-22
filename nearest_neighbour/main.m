@@ -7,6 +7,9 @@ clc();
 addpath('./methods');
 %% Load and Run `Config` files
 %%
+rootDir = './assets/data';
+% make a `static` class `path` and put this path on it. Because we have
+% same `configsDir` in `makeConfig` script
 configsDir = './assets/configs';
 filenames = Viz.getFilenames(configsDir);
 numberOfFilenames = numel(filenames);
@@ -26,11 +29,11 @@ for indexOfFilename = 1:numberOfFilenames
     rw.numberOfPoints = config.numberOfPoints;
     rw.numberOfDimensions = config.numberOfDimensions;
     
-    rootDir = rw.saveSamples(config.rootDir, config.numberOfSamples);
+    samplesDir = rw.saveSamples(rootDir, config.numberOfSamples);
     
     % copy `config` file
-    [parentOfRootDir, ~, ~] = fileparts(rootDir);
-    copyfile(filename, fullfile(parentOfRootDir, 'config.mat'));
+    [parentOfSamplesDir, ~, ~] = fileparts(samplesDir);
+    copyfile(filename, fullfile(parentOfSamplesDir, 'config.mat'));
     
     % run methods
     % - intersection object
@@ -40,14 +43,14 @@ for indexOfFilename = 1:numberOfFilenames
     % - MethodRunner
     mr = MethodRunner();
     mr.methods_ = config.methods;
-    mr.rootDir = rootDir;
+    mr.rootDir = samplesDir;
     mr.intersectionObj = intersectionObj;
     mr.info = config.info;
 
     mr.run();
     
     % save results
-    Viz.saveResults(rootDir);
+    Viz.saveResults(samplesDir);
     
     toc();
 end
