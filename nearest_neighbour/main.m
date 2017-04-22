@@ -12,7 +12,6 @@ filenames = Viz.getFilenames(configsDir);
 numberOfFilenames = numel(filenames);
 
 for indexOfFilename = 1:numberOfFilenames
-    % todo: save `config` file in the folder of results
     filename = filenames{indexOfFilename};
     config = load(filename);
     
@@ -28,6 +27,10 @@ for indexOfFilename = 1:numberOfFilenames
     rw.numberOfDimensions = config.numberOfDimensions;
     
     rootDir = rw.saveSamples(config.rootDir, config.numberOfSamples);
+    
+    % copy `config` file
+    [parentOfRootDir, ~, ~] = fileparts(rootDir);
+    copyfile(filename, fullfile(parentOfRootDir, 'config.mat'));
     
     % run methods
     % - intersection object
