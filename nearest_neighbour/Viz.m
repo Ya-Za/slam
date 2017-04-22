@@ -729,7 +729,7 @@ classdef Viz < handle
             % Parameters
             % ----------
             % - filename: char vector
-            %   Filename of random-walks sample
+            %   Filename of `config` file
             %
             % Returns
             % -------
@@ -737,21 +737,22 @@ classdef Viz < handle
             %   Table of configuration
             
             % load
-            sample = load(filename);
-            config = sample.input.config;
-            
+            config = load(filename);
+
             params = {...
-                'Standard Deviation'; ...
                 'Max Distance'; ...
-                'Number of Points'; ...
-                'Number of Dimensions' ...
+                'Standard Deviation'; ...
+                'Number of Dimensions'; ...
+                'Number of Samples'; ...
+                'Number of Points' ...
             };
         
             values = [...
-                config.std; ...
                 config.maxDistance; ...
-                config.numberOfPoints; ...
-                config.numberOfDimensions ...
+                config.std; ...
+                config.numberOfDimensions; ...
+                config.numberOfSamples; ...
+                config.numberOfPoints ...
             ];
         
             configTable = table(...
@@ -801,8 +802,11 @@ classdef Viz < handle
         
             elapsedTimesTable.Properties.Description = 'Elapsed-Times';
         end
-        
-        function printSummary(filenames)
+    end
+    
+    % Save
+    methods (Static)
+        function printSummary(rootDir)
             % Print summary of results
             %
             % Parameters
@@ -811,19 +815,20 @@ classdef Viz < handle
             %   Filenames of random-walks samples
             
             % config
+            % todo: Add `disp` method to print `dash-line` after displaying
+            % message
             disp('Config Table');
-            configTable = Viz.getConfigTable(filenames{1});
+            configFilename = fullfile(rootDir, 'config');
+            configTable = Viz.getConfigTable(configFilename);
             disp(configTable);
             
             % elapsed-times
             disp('Elapsed-Times Table');
+            filenames = Viz.getFilenames(fullfile(rootDir, 'samples'));
             elapsedTimesTable = Viz.getelapsedTimesTable(filenames);
             disp(elapsedTimesTable);
         end
-    end
-    
-    % Save
-    methods (Static)
+
         function saveResults(rootDir)
             % Make `results` folder in `roodDir` folder and save some
             % `results` in it
