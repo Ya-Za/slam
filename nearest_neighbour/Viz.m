@@ -828,11 +828,14 @@ classdef Viz < handle
             lastPointColor = Viz.color.lightRed;
             circleColor = Viz.color.lightRed;
             
-            maxDistance = max(abs(points(:)));
-            maxDistance = maxDistance + radius;
+            maxDistanceX = max(abs(points(1, :)));
+            maxDistanceX = maxDistanceX + radius;
+            maxDistanceY = max(abs(points(2, :)));
+            maxDistanceY = maxDistanceY + radius;
 
             % figure
-            Viz.figure('Classified Random Walks');
+            % Viz.figure('Classified Random Walks');
+            figure('Name', 'Classified Random Walks');
 
             % line plot
             x = points(1, :);
@@ -918,8 +921,8 @@ classdef Viz < handle
                 'YTickLabel', [] ...
             );
             axis([...
-                -maxDistance, maxDistance, ...
-                -maxDistance, maxDistance ...
+                -maxDistanceX, maxDistanceX, ...
+                -maxDistanceY, maxDistanceY ...
             ])
             axis('equal');
         end
