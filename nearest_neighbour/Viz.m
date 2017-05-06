@@ -832,6 +832,8 @@ classdef Viz < handle
             maxDistanceX = maxDistanceX + radius;
             maxDistanceY = max(abs(points(2, :)));
             maxDistanceY = maxDistanceY + radius;
+            
+            circleLineStyle = '--';
 
             % figure
             % Viz.figure('Classified Random Walks');
@@ -909,7 +911,7 @@ classdef Viz < handle
                 'Position', position, ...
                 'Curvature',[1 1], ...
                 'EdgeColor', circleColor, ...
-                'LineStyle', ':' ...
+                'LineStyle', circleLineStyle ...
             );
             hold('off');
             %   - config
