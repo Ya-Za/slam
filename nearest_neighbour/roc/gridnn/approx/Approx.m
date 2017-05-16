@@ -68,8 +68,9 @@ classdef Approx < handle
         function one()
             % 1-dimensional
             
-            % r, ns, nx, np
+            % r, cr, ns, nx, np
             r = Approx.r;
+            cr = Approx.cr;
             % - condition positive
             P = Approx.conditionPositive(1);
             ns = Approx.ns;
@@ -81,7 +82,7 @@ classdef Approx < handle
             FP = zeros(ns, nx);
             
             % scales
-            s = linspace(0, Approx.cr*r, ns);
+            s = linspace(0, cr*r, ns);
             
             parfor is = 1:ns
                 s_ = s(is);
@@ -114,6 +115,12 @@ classdef Approx < handle
                 E_FP(is) = mean(FP(is, :));
             end
             
+            % save
+            save('1d.mat', ...
+                'r', 'cr', 'ns', 'nx', 'np', ...
+                'FP', 'FN', 'E_FP', 'E_FN' ...
+            );
+            
             % plot
             Approx.plotfnfp(s, E_FN, E_FP, '1D');
         end
@@ -121,8 +128,9 @@ classdef Approx < handle
         function two()
             % 2-dimensional
             
-            % r, ns, nx, np
+            % r, cr, ns, nx, np
             r = Approx.r;
+            cr = Approx.cr;
             % - condition positive
             P = Approx.conditionPositive(2);
             ns = Approx.ns;
@@ -135,7 +143,7 @@ classdef Approx < handle
             FP = zeros(ns, nx, nx);
             
             % scales
-            s = linspace(0, Approx.cr*r, ns);
+            s = linspace(0, cr*r, ns);
             
             parfor is = 1:ns
                 s_ = s(is);
@@ -172,6 +180,12 @@ classdef Approx < handle
                 E_FP(is) = mean(FP(is, :));
             end
 
+            % save
+            save('2d.mat', ...
+                'r', 'cr', 'ns', 'nx', 'np', ...
+                'FP', 'FN', 'E_FP', 'E_FN' ...
+            );
+
             % plot
             Approx.plotfnfp(s, E_FN, E_FP, '2D');
         end
@@ -179,8 +193,9 @@ classdef Approx < handle
         function three()
             % 3-dimensional
             
-            % r, ns, nx, np
+            % r, cr, ns, nx, np
             r = Approx.r;
+            cr = Approx.cr;
             % - condition positive
             P = Approx.conditionPositive(3);
             ns = Approx.ns;
@@ -193,7 +208,7 @@ classdef Approx < handle
             FP = zeros(ns, nx, nx, nx);
             
             % scales
-            s = linspace(0, Approx.cr*r, ns);
+            s = linspace(0, cr*r, ns);
             
             parfor is = 1:ns
                 s_ = s(is);
@@ -233,6 +248,12 @@ classdef Approx < handle
                 E_FN(is) = mean(FN(is, :));
                 E_FP(is) = mean(FP(is, :));
             end
+
+            % save
+            save('3d.mat', ...
+                'r', 'cr', 'ns', 'nx', 'np', ...
+                'FP', 'FN', 'E_FP', 'E_FN' ...
+            );
 
             % plot
             Approx.plotfnfp(s, E_FN, E_FP, '3D');
@@ -316,4 +337,3 @@ classdef Approx < handle
     end
     
 end
-
