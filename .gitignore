@@ -18,4 +18,4 @@ slprj/
 octave-workspace
 
 # '.mat' files
-# *.mat
+*.mat
