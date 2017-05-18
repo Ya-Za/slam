@@ -85,6 +85,7 @@ classdef Approx < handle
             s = linspace(0, cr*r, ns);
             
             parfor is = 1:ns
+                tic();
                 s_ = s(is);
                 % prediction positive
                 PP = Approx.predictionPositive(s_, 1);
@@ -104,6 +105,8 @@ classdef Approx < handle
                     FP(is, ix) = PP - TP;
                     FN(is, ix) = P - TP;
                 end
+                
+                fprintf('%d \t %d seconds\n', is, toc());
             end
             
             % expected false negative & false positive
@@ -146,6 +149,7 @@ classdef Approx < handle
             s = linspace(0, cr*r, ns);
             
             parfor is = 1:ns
+                tic();
                 s_ = s(is);
                 % prediction positive
                 PP = Approx.predictionPositive(s_, 2);
@@ -169,8 +173,10 @@ classdef Approx < handle
                         FN(is, ix1, ix2) = P - TP;
                     end
                 end
+                
+                fprintf('%d \t %d seconds\n', is, toc());
             end
-            
+
             % expected false negative & false positive
             E_FN = zeros(1, ns);
             E_FP = zeros(1, ns);
@@ -211,6 +217,7 @@ classdef Approx < handle
             s = linspace(0, cr*r, ns);
             
             parfor is = 1:ns
+                tic();
                 s_ = s(is);
                 % prediction positive
                 PP = Approx.predictionPositive(s_, 3);
@@ -238,6 +245,8 @@ classdef Approx < handle
                         end
                     end
                 end
+                
+                fprintf('%d \t %d seconds\n', is, toc());
             end
             
             % expected false negative & false positive
@@ -316,23 +325,32 @@ classdef Approx < handle
             clear();
             clc();
             
+            % parameters
+            dashLine = '---';
+            
             % 1D
+            disp(dashLine);
             disp('1D');
             tic();
             Approx.one();
             toc();
+            disp(dashLine);
             
             % 2D
+            disp(dashLine);
             disp('2D');
             tic();
             Approx.two();
             toc();
+            disp(dashLine);
             
             % 3D
+            disp(dashLine);
             disp('3D');
             tic();
             Approx.three();
             toc();
+            disp(dashLine);
         end
     end
     
