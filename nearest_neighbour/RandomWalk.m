@@ -105,13 +105,16 @@ classdef RandomWalk < handle
             );
             if ~exist(outDir, 'dir')
                 mkdir(outDir);
+            else
+                return
             end
         
             % save generated random walks
             % - get number of previous saved samples
             lastNumberOfSamples = numel(dir(fullfile(outDir, '*.mat')));
             
-            parfor indexOfSample = (lastNumberOfSamples + 1):numberOfSamples
+            % `parfor` parallel for
+            for indexOfSample = (lastNumberOfSamples + 1):numberOfSamples
                 points = obj.getPoints();
                 outFile = fullfile(...
                     outDir, ...
