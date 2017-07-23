@@ -37,7 +37,9 @@ classdef Grid < BaseNN
             gridLength = ceil(2 * maxDistance / obj.gridResolution);
             % todo: write comment for following line
             gridLength = gridLength + 1;
-            obj.grid = cell(gridLength);
+            repeatedGridLength = ...
+                {repmat(gridLength, 1, info.numberOfDimensions)};
+            obj.grid = cell(repeatedGridLength{:});
         end
         
         function initSteps(obj)
@@ -67,16 +69,7 @@ classdef Grid < BaseNN
         function output = query(obj, point)
             point = point + obj.info.maxDistance + obj.gridResolution;
             % all neighbours
-            neighbours = obj.getNeighbours(point);
-            
-            % filter
-            % todo
-            output = neighbours(...
-                arrayfun(...
-                    @(x) obj.intersectionObj.haveIntersection(point, obj.points{x}), ...
-                    neighbours ...
-                ) ...
-            );
+            output = obj.getNeighbours(point);
             
             % note: 9:20 PM 4/16/2017 Me and Hamed after boaring debug :)
 %             output = [];
