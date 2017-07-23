@@ -8,7 +8,7 @@ addpath('./methods');
 %% Load and Run `Config` files
 %%
 rootDir = './assets/data';
-% make a `static` class `path` and put this path on it. Because we have
+% todo: make a `static` class `path` and put this path on it. Because we have
 % same `configsDir` in `makeConfig` script
 configsDir = './assets/configs';
 filenames = Viz.getFilenames(configsDir);
@@ -23,6 +23,7 @@ for indexOfFilename = 1:numberOfFilenames
     
     tic();
     % generate and save random-walks
+    % todo: make constructor for `RandomWalk` which gives `config` as input
     rw = RandomWalk();
     rw.std = config.std;
     rw.maxDistance = config.maxDistance;
