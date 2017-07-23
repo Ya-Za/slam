@@ -91,7 +91,7 @@ classdef Viz < handle
             % Parameters
             % ----------
             % - filenames: cell array of char vector
-            %   Filenames of random-walks samples
+            %   Filenames of random-walk samples
             % - methodName: char vector
             %   Name of target method
             %
@@ -123,7 +123,7 @@ classdef Viz < handle
             % Parameters
             % ----------
             % - filenames: cell array of char vector
-            %   Filenames of random-walks samples
+            %   Filenames of random-walk samples
             % - methodName: char vector
             %   Name of target method
             %
@@ -209,7 +209,7 @@ classdef Viz < handle
                 return
             end
             
-            % compute `computatin matrix`
+            % compute `confusion matrix`
             %   - load `matrix of outpus` of `LNN`
             lnnMatrixOfOutputs = ...
                 Viz.getMatrixOfOutputs(filename, 'LNN');
@@ -230,7 +230,7 @@ classdef Viz < handle
             % Parameters
             % ----------
             % - filenames: cell array of char vector
-            %   Filenames of random-walks samples
+            %   Filenames of random-walk samples
             % - methodName: char vector
             %   Name of target method
             %
@@ -259,7 +259,7 @@ classdef Viz < handle
             % Parameters
             % ----------
             % - filenames: cell array of char vector
-            %   Filenames of random-walks samples
+            %   Filenames of random-walk samples
             
             numberOfFilenames = numel(filenames);
 
@@ -320,10 +320,20 @@ classdef Viz < handle
             % - color: color
             %   Point color
 
-            scatter(point(1), point(2), ...
-                'MarkerFaceColor', color, ...
-                'MarkerEdgeColor', color ...
-            );
+            % number of dimensions
+            d = size(point, 1);
+            
+            if d == 2
+                scatter(point(1), point(2), ...
+                    'MarkerFaceColor', color, ...
+                    'MarkerEdgeColor', color ...
+                );
+            elseif d == 3
+                scatter3(point(1), point(2), point(3), ...
+                    'MarkerFaceColor', color, ...
+                    'MarkerEdgeColor', color ...
+                );
+            end
         end
 
         function plotRandomWalk(points, maxDistance, showPoints)
@@ -338,6 +348,18 @@ classdef Viz < handle
             % - showPoints: logical = true
             %   If show intermediate points
             
+            % number of dimensions
+            d = size(points, 1);
+            if d > 3
+                return
+            end
+            if d == 1
+                points = [...
+                    0:(size(points, 2) - 1); ...
+                    points(1, :) ...
+                ];
+            end
+            
             if ~exist('showPoints', 'var')
                 showPoints = true;
             end
@@ -351,20 +373,41 @@ classdef Viz < handle
             % plot
             x = points(1, :);
             y = points(2, :);
+            if d == 3
+                z = points(3, :);
+            end
             %   - line
-            line(...
-                'XData', x, ...
-                'YData', y, ...
-                'Color', lineColor ...
-            );
+            if d < 3
+                line(...
+                    'XData', x, ...
+                    'YData', y, ...
+                    'Color', lineColor ...
+                );
+            else
+                line(...
+                    'XData', x, ...
+                    'YData', y, ...
+                    'ZData', z, ...
+                    'Color', lineColor ...
+                );
+                view(3);
+            end
             hold('on');
             %   - scatter
             if showPoints
-                scatter(...
-                    x, y, ...
-                    'MarkerFaceColor', pointsColor, ...
-                    'MarkerEdgeColor', pointsColor ...
-                );
+                if d < 3
+                    scatter(...
+                        x, y, ...
+                        'MarkerFaceColor', pointsColor, ...
+                        'MarkerEdgeColor', pointsColor ...
+                    );
+                else
+                    scatter3(...
+                        x, y, z, ...
+                        'MarkerFaceColor', pointsColor, ...
+                        'MarkerEdgeColor', pointsColor ...
+                    );
+                end
             end
             %   - first point(at origin)
             Viz.plotPoint(points(:, 1), firstPointColor);
@@ -376,13 +419,18 @@ classdef Viz < handle
                 'Box', 'on', ...
                 'XTick', [], ...
                 'YTick', [], ...
-                'XTickLabel', [], ...
-                'YTickLabel', [] ...
+                'XLim', [-maxDistance, maxDistance], ...
+                'YLim', [-maxDistance, maxDistance] ...
             );
-            axis([...
-                -maxDistance, maxDistance, ...
-                -maxDistance, maxDistance ...
-            ])
+            
+            % three-dimensional
+            if d == 3
+                set(gca, ...
+                    'ZTick', [], ...
+                    'ZLim', [-maxDistance, maxDistance] ...
+                );
+            end
+            
             axis('equal');
         end
 
@@ -392,7 +440,7 @@ classdef Viz < handle
             % Parameters
             % ----------
             % - filenames: cell array of char vector
-            %   Filenames of random-walks samples
+            %   Filenames of random-walk samples
             % - maxNumberOfSamples: int = 100
             %   Maximum number of sample reandom-walks
             
@@ -494,7 +542,7 @@ classdef Viz < handle
             % Parameters
             % ----------
             % - filenames: cell array of char vector
-            %   Filenames of random-walks samples
+            %   Filenames of random-walk samples
             % - showErrorBars: logical = false
             %   Show erorr bars or not
             
@@ -528,17 +576,22 @@ classdef Viz < handle
                         'LineWidth', lineWidth ...
                     );
                 else
+                    % cumulative time
+                    meanElapsedTimes = cumsum(meanElapsedTimes);
                     plot(...
                         meanElapsedTimes, ...
                         'DisplayName', methodName, ...
                         'LineWidth', lineWidth ...
                     );
+                    set(gca, 'YScale', 'log');
                 end
             end
             hold('off');
             
             % config plot
             legend('show');
+            xlabel('Number of query points');
+            ylabel('Elapsed time (sec)');
             grid('on');
             grid('minor');
         end
@@ -551,7 +604,7 @@ classdef Viz < handle
             % Parameters
             % ----------
             % - filenames: cell array of char vector
-            %   Filenames of random-walks samples
+            %   Filenames of random-walk samples
             
             % figure
             Viz.figure('Box Plot of Elapsed-Times');
@@ -588,7 +641,7 @@ classdef Viz < handle
             % Parameters
             % ----------
             % - filenames: cell array of char vector
-            %   Filenames of random-walks samples
+            %   Filenames of random-walk samples
             
             % figure
             Viz.figure('Box Plot of Overall Elapsed-Times');
@@ -626,7 +679,7 @@ classdef Viz < handle
             % Parameters
             % ----------
             % - filenames: cell array of char vector
-            %   Filenames of random-walks samples
+            %   Filenames of random-walk samples
             % - methodName: char vector
             %   Name of target method
             % - maxNumberOfSamples: int = 100
@@ -699,7 +752,7 @@ classdef Viz < handle
             % Parameters
             % ----------
             % - filenames: cell array of char vector
-            %   Filenames of random-walks samples
+            %   Filenames of random-walk samples
             
             % figure
             figure();
@@ -776,7 +829,7 @@ classdef Viz < handle
             % Parameters
             % ----------
             % - filenames: cell array of char vector
-            %   Filenames of random-walks samples
+            %   Filenames of random-walk samples
             %
             % Returns
             % -------
@@ -928,6 +981,283 @@ classdef Viz < handle
             ])
             axis('equal');
         end
+        
+        function plotClassifiedRandomWalk2(points)
+            % Plot classified random walk based on range search
+            % for `intersection` paper
+            %
+            % Parameters
+            % ----------
+            % - points: double matrix
+            %   [p1, p2, ...]
+            
+            % Properties
+            radius = 0.5;
+            markerArea = 9;
+            
+            lineColor = Viz.color.lightGray;
+            
+            positivePointColor = Viz.color.darkRed;
+            negativePointColor = Viz.color.darkBlue;
+            lastPointColor = Viz.color.darkGreen;
+            
+            firstPointLineStyle = '--';
+            lastPointLineStyle = '-';
+            positivePointLineStyle = '-';
+            negativePointLineStyle = '-';
+            
+            maxDistanceX = max(abs(points(1, :))) + radius;
+            maxDistanceY = max(abs(points(2, :))) + radius;
+
+            % figure
+            % Viz.figure('Classified Random Walks');
+            figure('Name', 'Classified Random Walks');
+
+            % line plot
+            line(...
+                'XData', points(1, :), ...
+                'YData', points(2, :), ...
+                'Color', lineColor ...
+            );
+            hold('on');
+            
+            % cluster points
+            % - first point
+            firstPoint = points(:, 1);
+            % - last point
+            lastPoint = points(:, end);
+            % - positive and negative points
+            points(:, [1, end]) = [];
+            numberOfPoints = size(points, 2);
+            positivePointIndexes = zeros(1, numberOfPoints, 'logical');
+            for indexOfPoint = 1:numberOfPoints
+                point = points(:, indexOfPoint);
+                if norm(lastPoint - point) <= 2 * radius
+                    positivePointIndexes(indexOfPoint) = true;
+                end
+            end
+            positivePoints = points(:, positivePointIndexes);
+            % - negative points
+            negativePoints = points(:, ~positivePointIndexes);
+            
+            % scatter plot
+            % - negative points
+            plotPoints(negativePoints, markerArea, negativePointColor, ...
+                radius, negativePointLineStyle);
+            % - positive points
+            plotPoints(positivePoints, markerArea, positivePointColor, ...
+                radius, positivePointLineStyle);
+            % - first point(at origin)
+            firstPointColor = negativePointColor;
+            if norm(lastPoint - firstPoint) <= 2 * radius
+                firstPointColor = positivePointColor;
+            end
+            plotPoints(firstPoint, markerArea, firstPointColor, ...
+                radius, firstPointLineStyle);
+            % - last point
+            plotPoints(lastPoint, markerArea, lastPointColor, ...
+                radius, lastPointLineStyle);
+            hold('off');
+            %   - config
+            set(gca, ...
+                'Box', 'on', ...
+                'XTick', [], ...
+                'YTick', [], ...
+                'XTickLabel', [], ...
+                'YTickLabel', [] ...
+            );
+            axis([...
+                -maxDistanceX, maxDistanceX, ...
+                -maxDistanceY, maxDistanceY ...
+            ])
+            axis('equal');
+            
+            % Local functions
+            function plotPoints(points, markerArea, color, radius, style)
+                % centers
+                scatter(...
+                    points(1, :), points(2, :), markerArea, ...
+                    'MarkerFaceColor', color, ...
+                    'MarkerEdgeColor', color ...
+                );
+                % circles
+                drawCircles(...
+                    points, radius, ...
+                    color, ...
+                    style ...
+                );
+            end
+            
+            function drawCircles(centers, radius, color, style)
+                for center = centers
+                    % top left corner of bounding-box
+                    position = [...
+                        center(1) - radius, ...
+                        center(2) - radius, ...
+                        2 * radius, ...
+                        2 * radius ...
+                    ];
+                    % draw circle with its bounding-box rectangle
+                    rectangle(...
+                        'Position', position, ...
+                        'Curvature',[1 1], ...
+                        'EdgeColor', color, ...
+                        'LineStyle', style ...
+                    );
+                end
+            end
+        end
+        
+        function plotClassifiedRandomWalk3(points)
+            % Plot classified random walk based on range search
+            % for `intersection` paper
+            %
+            % Parameters
+            % ----------
+            % - points: double matrix
+            %   [p1, p2, ...]
+            
+            % Properties
+            radius = 1.5;
+            markerArea = 36;
+            
+            lineColor = Viz.color.gray;
+            lineWidth = 1;
+            
+            positivePointColor = Viz.color.lightRed;
+            negativePointColor = Viz.color.lightBlue;
+            lastPointColor = Viz.color.lightGreen;
+            
+            firstPointLineStyle = ':';
+            lastPointLineStyle = '-';
+            positivePointLineStyle = '-';
+            negativePointLineStyle = '-';
+            
+            maxDistanceX = max(abs(points(1, :))) + radius;
+            maxDistanceY = max(abs(points(2, :))) + radius;
+            maxDistanceZ = max(abs(points(3, :))) + radius;
+
+            % figure
+            % Viz.figure('Classified Random Walks');
+            figure('Name', 'Classified Random Walks');
+
+            % line plot
+            line(...
+                'XData', points(1, :), ...
+                'YData', points(2, :), ...
+                'ZData', points(3, :), ...
+                'LineWidth', lineWidth, ...
+                'Color', lineColor ...
+            );
+            view(3);
+            hold('on');
+            
+            % cluster points
+            % - first point
+            firstPoint = points(:, 1);
+            % - last point
+            lastPoint = points(:, end);
+            % - positive and negative points
+            points(:, [1, end]) = [];
+            numberOfPoints = size(points, 2);
+            positivePointIndexes = zeros(1, numberOfPoints, 'logical');
+            for indexOfPoint = 1:numberOfPoints
+                point = points(:, indexOfPoint);
+                if norm(lastPoint - point) <= 2 * radius
+                    positivePointIndexes(indexOfPoint) = true;
+                end
+            end
+            positivePoints = points(:, positivePointIndexes);
+            % - negative points
+            negativePoints = points(:, ~positivePointIndexes);
+            
+            % scatter plot
+            % - negative points
+            plotPoints(negativePoints, markerArea, negativePointColor, ...
+                radius, negativePointLineStyle);
+            % - positive points
+            plotPoints(positivePoints, markerArea, positivePointColor, ...
+                radius, positivePointLineStyle);
+            % - first point(at origin)
+            firstPointColor = negativePointColor;
+            if norm(lastPoint - firstPoint) <= 2 * radius
+                firstPointColor = positivePointColor;
+            end
+            plotPoints(firstPoint, markerArea, firstPointColor, ...
+                radius, firstPointLineStyle);
+            % - last point
+            plotPoints(lastPoint, markerArea, lastPointColor, ...
+                radius, lastPointLineStyle);
+            hold('off');
+            %   - config
+            set(gca, ...
+                'Box', 'on', ...
+                'XTick', [], ...
+                'YTick', [], ...
+                'ZTick', [] ...
+            );
+            axis([...
+                -maxDistanceX, maxDistanceX, ...
+                -maxDistanceY, maxDistanceY, ...
+                -maxDistanceZ, maxDistanceZ ...
+            ])
+%             axis('tight');
+            axis('equal');
+            
+            
+            % Local functions
+            function plotPoints(points, markerArea, color, radius, style)
+                % centers
+                scatter3(...
+                    points(1, :), points(2, :), points(3, :), markerArea, ...
+                    'MarkerFaceColor', color, ...
+                    'MarkerEdgeColor', color ...
+                );
+                % spheres
+                drawSpheres(...
+                    points, radius, ...
+                    color, ...
+                    style ...
+                );
+            end
+            
+            function drawSpheres(centers, radius, color, style)
+                for center = centers
+                    [x, y, z] = sphere;
+                    surf(...
+                        radius * x + center(1), ...
+                        radius * y + center(2), ...
+                        radius * z + center(3), ...
+                        'FaceColor', 'none',  ...
+                        'FaceAlpha', 0.1,  ...
+                        'EdgeColor', color, ...
+                        'EdgeAlpha', 0.2, ...
+                        'LineStyle', style, ...
+                        'LineWidth', 0.01 ...
+                    );
+%                     mesh(...
+%                         radius * x + center(1), ...
+%                         radius * y + center(2), ...
+%                         radius * z + center(3), ...
+%                         'EdgeColor', color, ...
+%                         'LineStyle', style, ...
+%                         'LineWidth', 0.1 ...
+%                     );
+                end
+            end
+        end
+        
+        function plotClassifiedRandomWalk3FromFiles(rootDir)
+            filenames = Viz.getFilenames(rootDir);
+            numberOfFilenames = numel(filenames);
+            for indexOfFilename = 1:numberOfFilenames
+                filename = filenames{indexOfFilename};
+                sample = load(filename);
+                points = sample.input.points;
+                
+                Viz.plotClassifiedRandomWalk3(points);
+            end
+        end
     end
     
     % Save
@@ -938,7 +1268,7 @@ classdef Viz < handle
             % Parameters
             % ----------
             % - filenames: cell array of char vector
-            %   Filenames of random-walks samples
+            %   Filenames of random-walk samples
             
             % config
             % todo: Add `disp` method to print `dash-line` after displaying
