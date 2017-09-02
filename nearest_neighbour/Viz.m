@@ -4,14 +4,28 @@ classdef Viz < handle
     properties (Constant)
         delay = 0.01;
         color = struct(...
-            'gray', [0.5, 0.5, 0.5], ...
+            'gray1', [0.1, 0.1, 0.1], ...
+            'gray2', [0.2, 0.2, 0.2], ...
+            'gray3', [0.3, 0.3, 0.3], ...
+            'gray4', [0.4, 0.4, 0.4], ...
+            'gray5', [0.5, 0.5, 0.5], ...
+            'gray6', [0.6, 0.6, 0.6], ...
+            'gray7', [0.7, 0.7, 0.7], ...
+            'gray8', [0.8, 0.8, 0.8], ...
+            'gray9', [0.9, 0.9, 0.9], ...
             'lightGray', [0.8, 0.8, 0.8], ...
-            'darkRed', [0.5, 0, 0], ...
-            'darkGreen', [0, 0.5, 0], ...
-            'darkBlue', [0, 0, 0.5], ...
+            'gray', [0.5, 0.5, 0.5], ...
             'lightRed', [0.8, 0, 0], ...
+            'darkRed', [0.5, 0, 0], ...
             'lightGreen', [0, 0.8, 0], ...
-            'lightBlue', [0, 0, 0.8] ...
+            'darkGreen', [0, 0.5, 0], ...
+            'lightBlue', [0, 0, 0.8], ...
+            'darkBlue', [0, 0, 0.5] ...
+        );
+        fontSize = struct(...
+            'axis', 14, ...
+            'label', 16, ...
+            'legend', 16 ...
         );
     end
     
@@ -39,6 +53,25 @@ classdef Viz < handle
                 'Units', 'normalized', ...
                 'OuterPosition', [0, 0, 1, 1] ...
             );
+        end
+        
+        function setLatexInterpreter(ax)
+            % Set interpreter to `latex`
+            %
+            % Parameters
+            % ----------
+            % - ax: Axes = gca
+            % Input `axes`
+            
+            % default
+            if ~exist('ax', 'var')
+                ax = gca;
+            end
+            
+            ax.TickLabelInterpreter = 'latex';
+            ax.XLabel.Interpreter = 'latex';
+            ax.YLabel.Interpreter = 'latex';
+            ax.ZLabel.Interpreter = 'latex';
         end
         
         function filenames = getFilenames(rootDir, format)
@@ -431,9 +464,24 @@ classdef Viz < handle
                 );
             end
             
-            axis('equal');
+            axis('square');
         end
 
+        function plotRandomWalkFromFile(filename)
+            % Plot random-walk from file
+            %
+            % Parameters
+            % ----------
+            % - filename: char vector
+            %   Filename of random-walk sample
+            
+            sample = load(filename);
+            points = sample.input.points;
+            maxDistance = sample.input.config.maxDistance;
+
+            Viz.plotRandomWalk(points, maxDistance, false);
+        end
+        
         function plotSomeRandomWalks(filenames, maxNumberOfSamples)
             % Plot grid of random walks
             %
@@ -461,12 +509,9 @@ classdef Viz < handle
             
             for indexOfFilename = 1:numberOfFilenames
                 filename = filenames{indexOfFilename};
-                sample = load(filename);
-                points = sample.input.points;
-                maxDistance = sample.input.config.maxDistance;
                 
                 subplot(rows, cols, indexOfFilename);
-                Viz.plotRandomWalk(points, maxDistance, false);
+                Viz.plotRandomWalkFromFile(filename);
             end
         end
 
@@ -673,6 +718,26 @@ classdef Viz < handle
             grid('minor');
         end
         
+        function plotOutputOfMethod(filename, methodName)
+            % Plot `outputs` of a specified `method`
+            %
+            % Parameters
+            % ----------
+            % - filename: char vector
+            %   Filename of random-walk sample
+            % - methodName: char vector
+            %   Name of target method
+            
+            % matrix of outputs
+            matrixOfOutputs = ...
+                Viz.getMatrixOfOutputs(filename, methodName);
+
+            imagesc(matrixOfOutputs);
+            % colormap('hot');
+            axis('square');
+            axis('off'); 
+        end
+        
         function plotOutputsOfMethod(filenames, methodName, maxNumberOfSamples)
             % Plot `outputs` of a specified `method`
             %
@@ -702,17 +767,9 @@ classdef Viz < handle
             
             for indexOfFilename = 1:numberOfFilenames
                 filename = filenames{indexOfFilename};
-            
-                % matrix of outputs
-                matrixOfOutputs = ...
-                    Viz.getMatrixOfOutputs(filename, methodName);
-
                 % show image
                 subplot(rows, cols, indexOfFilename);
-                imagesc(matrixOfOutputs);
-                % colormap('hot');
-                axis('equal');
-                axis('off');
+                Viz.plotOutputOfMethod(filename, methodName);
             end
         end
         
@@ -863,34 +920,144 @@ classdef Viz < handle
         end
     end
     
-    % Paper
+    % Geometry
     methods (Static)
+        function [x, y, z] = sphere(center, radius)
+            % Sphere with given `center` and `radius`
+            %
+            % Parameters
+            % - center: 3-by-1 double vector
+            %   Center of sphere
+            % - radius: double
+            %   Radius of sphere
+            %
+            % Returns
+            % -------
+            % - [x, y, z]: [20-by-20, 20-by-20, 20-by-20]
+            %   x-, y-, and z-coordinates of a unit sphere for use with
+            %   surf and mesh
+            
+            [x, y, z] = sphere(20);
+            x = radius * x + center(1);
+            y = radius * y + center(2);
+            z = radius * z + center(3);
+        end
+        
+        function plotLine(p1, p2, color, lineWidth, lineStyle)
+            % Plot a 3d line between `p1` and `p2`
+            
+            p = [p1, p2];
+            line(...
+                'XData', p(1, :), ...
+                'YData', p(2, :), ...
+                'ZData', p(3, :), ...
+                'Color', color, ...
+                'LineWidth', lineWidth, ...
+                'LineStyle', lineStyle ...
+            );
+        end
+        
+        function plotVector(p1, p2, color, lineWidth, lineStyle)
+            % Plot a 3d vector between `p1` and `p2`
+            
+            u = p2 - p1;
+            quiver3(...
+                p1(1, :), p1(2, :), p1(3, :), ...
+                u(1, :), u(2, :), u(3, :), ...
+                'MaxHeadSize', 0.15, ...
+                'Color', color, ...
+                'LineWidth', lineWidth, ...
+                'LineStyle', lineStyle ...
+            );
+        end
+        
+        function points = cube(s, t)
+            % Generate a cube and `scale` and `translate` it
+            %
+            % Parameters
+            % ----------
+            % - s: double = 1
+            %   Scale factor
+            % - t: 3-by-1 double vector = [0, 0, 0]
+            %   Movement distance for `x`, `y` and `z`
+            %
+            % Returns
+            % -------
+            % - points: 3-by-3 double matrix
+            %   Constructing points of cube
+            
+            % default values
+            if ~exist('s', 'var')
+                s = 1;
+            end
+            if ~exist('t', 'var')
+                t = [0, 0, 0]';
+            end
+            
+            % unit cube
+            points = [
+                0 0 0
+                1 0 0
+                1 0 1
+                0 0 1
+                0 1 0
+                1 1 0
+                1 1 1
+                0 1 1
+            ]';
+            % scale
+            points = s * points;
+            % translate
+            points = points + t;
+            
+            % transpose
+            points = points';
+        end
+    end
+    
+    % Paper: GridNN
+    methods (Static)
+        % fig:rw
         function plotClassifiedRandomWalk(points)
             % Plot classified random walk based on range search
             %
             % Parameters
             % ----------
-            % - points: double matrix
+            % - points: 2-by-n double matrix
             %   [p1, p2, ...]
             
+            % default values
+            if ~exist('points', 'var')
+                points = load(...
+                    './assets/data/paper/gridnn/fig_rw.mat', ...
+                    'points' ...
+                );
+                points = points.points;
+            end
+            
             % Properties
-            radius = 3;
+            radius = 1;
+            
+            circleLineStyle = '--';
+            
             lineColor = Viz.color.lightGray;
-            positivePointColor = Viz.color.darkRed;
-            negativePointColor = Viz.color.darkBlue;
+            positivePointsColor = Viz.color.darkRed;
+            negativePointsColor = Viz.color.darkBlue;
             lastPointColor = Viz.color.lightRed;
             circleColor = Viz.color.lightRed;
             
-            maxDistanceX = max(abs(points(1, :)));
-            maxDistanceX = maxDistanceX + radius;
-            maxDistanceY = max(abs(points(2, :)));
-            maxDistanceY = maxDistanceY + radius;
+            firstPointMarker = 's';
+            lastPointMarker = '*';
+            negativePointsMarker = 'o';
+            positivePointsMarker = 'o';
             
-            circleLineStyle = '--';
-
+            firstPointArea = 144;
+            lastPointArea = 144;
+            negativePointsArea = 100;
+            positivePointsArea = 100;
+            
             % figure
-            % Viz.figure('Classified Random Walks');
-            figure('Name', 'Classified Random Walks');
+            Viz.figure('Classified Random Walks (fig:rw)');
 
             % line plot
             x = points(1, :);
@@ -924,72 +1091,296 @@ classdef Viz < handle
             
             % scatter plot
             % - negative points
-            scatter(...
-                negativePoints(1, :), negativePoints(2, :), ...
-                'MarkerFaceColor', negativePointColor, ...
-                'MarkerEdgeColor', negativePointColor ...
+            plotPoints(...
+                negativePoints, ...
+                negativePointsMarker, ...
+                negativePointsArea, ...
+                negativePointsColor ...
             );
             % - positive points
-            scatter(...
-                positivePoints(1, :), positivePoints(2, :), ...
-                'MarkerFaceColor', positivePointColor, ...
-                'MarkerEdgeColor', positivePointColor ...
+            plotPoints(...
+                positivePoints, ...
+                positivePointsMarker, ...
+                positivePointsArea, ...
+                positivePointsColor ...
             );
             % - first point(at origin)
-            firstPointColor = negativePointColor;
+            firstPointColor = negativePointsColor;
             if norm(lastPoint - firstPoint) <= radius
-                firstPointColor = positivePointColor;
+                firstPointColor = positivePointsColor;
             end
-            scatter(...
-                firstPoint(1), firstPoint(2), ...
-                'Marker', 's', ...
-                'MarkerFaceColor', firstPointColor, ...
-                'MarkerEdgeColor', firstPointColor ...
+            plotPoints(...
+                firstPoint, ...
+                firstPointMarker, ...
+                firstPointArea, ...
+                firstPointColor ...
             );
             % - last point
-            scatter(...
-                lastPoint(1), lastPoint(2), ...
-                'Marker', '*', ...
-                'MarkerFaceColor', lastPointColor, ...
-                'MarkerEdgeColor', lastPointColor ...
+            plotPoints(...
+                lastPoint, ...
+                lastPointMarker, ...
+                lastPointArea, ...
+                lastPointColor ...
             );
             % - circle
-            position = [...
-                lastPoint(1) - radius, ...
-                lastPoint(2) - radius, ...
-                2 * radius, ...
-                2 * radius ...
-            ];
-            rectangle(...
-                'Position', position, ...
-                'Curvature',[1 1], ...
-                'EdgeColor', circleColor, ...
-                'LineStyle', circleLineStyle ...
-            );
+            plotCircle(lastPoint, radius, circleColor, circleLineStyle);
+
             hold('off');
             %   - config
             set(gca, ...
+                'Visible', 'off', ...
                 'Box', 'on', ...
                 'XTick', [], ...
-                'YTick', [], ...
-                'XTickLabel', [], ...
-                'YTickLabel', [] ...
+                'YTick', [] ...
             );
-            axis([...
-                -maxDistanceX, maxDistanceX, ...
-                -maxDistanceY, maxDistanceY ...
-            ])
+            axis('tight');
             axis('equal');
+            
+            % Local Functions
+            function plotPoints(points, marker, markerArea, color)
+                scatter(...
+                    points(1, :), points(2, :), markerArea, ...
+                    'Marker', marker, ...
+                    'MarkerFaceColor', color, ...
+                    'MarkerEdgeColor', color ...
+                );
+            end
+            function plotCircle(center, radius, edgeColor, lineStyle)
+                topLeft = [...
+                    center(1) - radius, ...
+                    center(2) - radius, ...
+                    2 * radius, ...
+                    2 * radius ...
+                ];
+                rectangle(...
+                    'Position', topLeft, ...
+                    'Curvature',[1 1], ...
+                    'EdgeColor', edgeColor, ...
+                    'LineStyle', lineStyle ...
+                );
+            end
+            
         end
         
-        function plotClassifiedRandomWalk2(points)
-            % Plot classified random walk based on range search
-            % for `intersection` paper
+        function plotGrid(n, s, t)
+            % Plot scaled and translated n-by-n grid
             %
             % Parameters
             % ----------
-            % - points: double matrix
+            % - n: int
+            %   n-by-n grid
+            % - s: double = 1
+            %   Scale factor
+            % - t: 3-by-1 double vector = [0, 0, 0]
+            %   Movement distance for `x`, `y` and `z`
+            
+            % default values
+            if ~exist('s', 'var')
+                s = 1;
+            end
+            if ~exist('t', 'var')
+                t = [0, 0, 0]';
+            end
+            
+            % Parameters
+            color = Viz.color.gray7;
+            lineWidth = 1;
+            lineStyle = '--';
+            
+            z = t(3);
+            % horizontal lines
+            x0 = t(1);
+            x1 = x0 + n * s;
+            y0 = t(2);
+            for i = 0:n
+                y = y0 + i * s;
+                p0 = [x0, y, z]';
+                p1 = [x1, y, z]';
+                Viz.plotLine(p0, p1, color, lineWidth, lineStyle);
+            end
+            % vertical lines
+            x0 = t(1);
+            y0 = t(2);
+            y1 = y0 + n * s;
+            for i = 0:n
+                x = x0 + i * s;
+                p0 = [x, y0, z]';
+                p1 = [x, y1, z]';
+                Viz.plotLine(p0, p1, color, lineWidth, lineStyle);
+            end
+        end
+        
+        function points = plotCube(color, s, t)
+            % default values
+            if ~exist('s', 'var')
+                s = 1;
+            end
+            if ~exist('t', 'var')
+                t = [0, 0, 0]';
+            end
+
+            points = Viz.cube(s, t);
+            faces = [
+                1, 2, 3, 4 % front
+                5, 6, 7, 8 % back
+                1, 2, 6, 5 % bottom
+                2, 6, 7, 3 % right
+                4, 3, 7, 8 % top
+                1, 4, 8, 5 % left
+            ];
+            patch(...
+                'Vertices', points, ...
+                'Faces', faces, ...
+                'LineWidth', 1.5, ...
+                'EdgeColor', 'none', ...
+                'EdgeAlpha', 1, ...
+                'FaceColor', color, ...
+                'FaceAlpha', 0.1 ...
+            );
+            lineWidth = 2.5;
+            lineStyle = '--';
+            Viz.plotLine(points(1, :)', points(2, :)', color, lineWidth, '-');
+            Viz.plotLine(points(2, :)', points(6, :)', color, lineWidth, lineStyle);
+            Viz.plotLine(points(6, :)', points(5, :)', color, lineWidth, lineStyle);
+            Viz.plotLine(points(5, :)', points(1, :)', color, lineWidth, '-');
+            
+            Viz.plotLine(points(4, :)', points(3, :)', color, lineWidth, '-');
+            Viz.plotLine(points(3, :)', points(7, :)', color, lineWidth, '-');
+            Viz.plotLine(points(7, :)', points(8, :)', color, lineWidth, '-');
+            Viz.plotLine(points(8, :)', points(4, :)', color, lineWidth, '-');
+            
+            Viz.plotLine(points(1, :)', points(4, :)', color, lineWidth, '-');
+            Viz.plotLine(points(2, :)', points(3, :)', color, lineWidth, '-');
+            Viz.plotLine(points(6, :)', points(7, :)', color, lineWidth, lineStyle);
+            Viz.plotLine(points(5, :)', points(8, :)', color, lineWidth, '-');
+        end
+        
+        function plotCubeWithVertices()
+            % Plot a unit cube with its vertices
+            
+            % Parameters
+            
+            
+            % Plot
+            Viz.figure('3D Neighburs');
+            hold('on');
+            % - grid
+            Viz.plotGrid(3, 1, [-1, -1, 0]');
+            % - cube
+            points = Viz.plotCube([0.04, 0.5, 0.04]);
+            % - points
+            scatter3(points(:, 1), points(:, 2), points(:, 3), 49, ...
+                'MarkerFaceColor', [0.7, 0.06, 0.2], ...
+                'MarkerEdgeColor', [0.7, 0.06, 0.2] ...
+            );
+            % - point lables
+            d = 0.02;
+            for i = 1:size(points, 1)
+                x = points(i, 1);
+                y = points(i, 2);
+                z = points(i, 3);
+                txt = sprintf('(%d, %d, %d)', x, y, z);
+                text(...
+                    x + d, y - d, z + 0.05, ...
+                    txt, ...
+                    'Color', [0.7, 0.06, 0.2]);
+            end
+            
+            hold('off');
+            % Config
+            view(3);
+            view([-60, 15]);
+            axis('equal');
+            set(gca, ...
+                'Visible', 'off', ...
+                'Box', 'on', ...
+                'XTick', [], ...
+                'YTick', [], ...
+                'ZTick', [] ...
+            );
+        end
+        
+        function plotGridNN3D()
+            % Plot a unit cube with its vertices
+            
+            % Parameters
+            color = [1, 0.3, 0.4];
+            faceColor = color;
+            edgeColor = color;
+            
+            % Plot
+            Viz.figure('3D Neighburs');
+            hold('on');
+            % - grid
+            Viz.plotGrid(3, 1, [-1, -1, -0.5]');
+            % - green cube
+            Viz.plotCube([0.04, 0.5, 0.04]);
+            % red cube
+            Viz.plotCube([1, 0.3, 0.4], 2, [-0.5, -0.5, -0.5]');
+            % sphere
+            center = [0.7, 0.7, 0.7];
+            radius = 1.3;
+            [x, y, z] = Viz.sphere(center, radius);
+            surf(...
+                x, y, z, ...                    
+                'FaceColor', faceColor,  ...
+                'FaceAlpha', 0.1,  ...
+                'EdgeColor', edgeColor, ...
+                'EdgeAlpha', 0.2, ...
+                'LineStyle', '-', ...
+                'LineWidth', 0.1 ...
+            );
+            % - radius
+            p = center + [0, -radius, 0];
+            Viz.plotLine(center', p', Viz.color.gray4, 2, '--');
+            % - center
+            plotPoint(center, 49, Viz.color.gray1);
+            
+            
+            hold('off');
+            % Config
+            view(3);
+            view([-60, 15]);
+            axis('equal');
+            set(gca, ...
+                'Visible', 'off', ...
+                'Box', 'on', ...
+                'XTick', [], ...
+                'YTick', [], ...
+                'ZTick', [] ...
+            );
+        
+            function plotPoint(p, markerArea, color)
+                scatter3(...
+                    p(1), p(2), p(3), markerArea, ...
+                    'LineWidth', 1, ...
+                    'MarkerFaceColor', color, ...
+                    'MarkerEdgeColor', color ...
+                );
+            end
+        end
+    end
+    
+    % Paper: Frustum-Frustum Intersection
+    % - Figures
+    methods (Static)
+        % fig:2d_random_walk
+        function plotClassifiedRandomWalk2D(points)
+            % Plot classified random walk based on range search
+            %
+            % Parameters
+            % ----------
+            % - points: 2-by-n double matrix
             %   [p1, p2, ...]
+            
+            % default values
+            if ~exist('points', 'var')
+                points = load(...
+                    './assets/data/paper/gridnn/fig_rw.mat', ...
+                    'points' ...
+                );
+                points = points.points;
+            end
             
             % Properties
             radius = 0.5;
@@ -1006,12 +1397,8 @@ classdef Viz < handle
             positivePointLineStyle = '-';
             negativePointLineStyle = '-';
             
-            maxDistanceX = max(abs(points(1, :))) + radius;
-            maxDistanceY = max(abs(points(2, :))) + radius;
-
             % figure
-            % Viz.figure('Classified Random Walks');
-            figure('Name', 'Classified Random Walks');
+            Viz.figure('Classified Random Walks (fig:2d_random_walk)');
 
             % line plot
             line(...
@@ -1057,22 +1444,19 @@ classdef Viz < handle
             % - last point
             plotPoints(lastPoint, markerArea, lastPointColor, ...
                 radius, lastPointLineStyle);
+            
             hold('off');
             %   - config
             set(gca, ...
+                'Visible', 'off', ...
                 'Box', 'on', ...
                 'XTick', [], ...
-                'YTick', [], ...
-                'XTickLabel', [], ...
-                'YTickLabel', [] ...
+                'YTick', [] ...
             );
-            axis([...
-                -maxDistanceX, maxDistanceX, ...
-                -maxDistanceY, maxDistanceY ...
-            ])
+            axis('tight');
             axis('equal');
             
-            % Local functions
+            % Local Functions
             function plotPoints(points, markerArea, color, radius, style)
                 % centers
                 scatter(...
@@ -1108,14 +1492,23 @@ classdef Viz < handle
             end
         end
         
-        function plotClassifiedRandomWalk3(points)
+        % fig:3d_random_walk
+        function plotClassifiedRandomWalk3D(points)
             % Plot classified random walk based on range search
-            % for `intersection` paper
             %
             % Parameters
             % ----------
             % - points: double matrix
             %   [p1, p2, ...]
+            
+            % default values
+            if ~exist('points', 'var')
+                points = load(...
+                    './assets/data/paper/intersection/fig_3d_random_walk.mat', ...
+                    'points' ...
+                );
+                points = points.points;
+            end
             
             % Properties
             radius = 1.5;
@@ -1132,14 +1525,9 @@ classdef Viz < handle
             lastPointLineStyle = '-';
             positivePointLineStyle = '-';
             negativePointLineStyle = '-';
-            
-            maxDistanceX = max(abs(points(1, :))) + radius;
-            maxDistanceY = max(abs(points(2, :))) + radius;
-            maxDistanceZ = max(abs(points(3, :))) + radius;
 
             % figure
-            % Viz.figure('Classified Random Walks');
-            figure('Name', 'Classified Random Walks');
+            Viz.figure('Classified Random Walks (fig:3d_random_walk)');
 
             % line plot
             line(...
@@ -1191,21 +1579,16 @@ classdef Viz < handle
             hold('off');
             %   - config
             set(gca, ...
+                'Visible', 'on', ...
                 'Box', 'on', ...
                 'XTick', [], ...
                 'YTick', [], ...
                 'ZTick', [] ...
             );
-            axis([...
-                -maxDistanceX, maxDistanceX, ...
-                -maxDistanceY, maxDistanceY, ...
-                -maxDistanceZ, maxDistanceZ ...
-            ])
-%             axis('tight');
+            axis('tight');
             axis('equal');
             
-            
-            % Local functions
+            % Local Functions
             function plotPoints(points, markerArea, color, radius, style)
                 % centers
                 scatter3(...
@@ -1214,20 +1597,31 @@ classdef Viz < handle
                     'MarkerEdgeColor', color ...
                 );
                 % spheres
-                drawSpheres(...
+                plotSpheres(...
                     points, radius, ...
                     color, ...
                     style ...
                 );
             end
             
-            function drawSpheres(centers, radius, color, style)
+            function plotSpheres(centers, radius, color, style)
+                % Plot spheres
+                %
+                % Parameters
+                % ----------
+                % - centers: 3-by-n double matrix
+                %   Centers of spheres
+                % - radius: double
+                %   Radius of spheres
+                % - color: EdgeColor
+                %   Color of edges
+                % - Style: LineStyle
+                %   Style of lines
+
                 for center = centers
-                    [x, y, z] = sphere;
+                    [x, y, z] = Viz.sphere(center, radius);
                     surf(...
-                        radius * x + center(1), ...
-                        radius * y + center(2), ...
-                        radius * z + center(3), ...
+                        x, y, z, ...                    
                         'FaceColor', 'none',  ...
                         'FaceAlpha', 0.1,  ...
                         'EdgeColor', color, ...
@@ -1235,19 +1629,11 @@ classdef Viz < handle
                         'LineStyle', style, ...
                         'LineWidth', 0.01 ...
                     );
-%                     mesh(...
-%                         radius * x + center(1), ...
-%                         radius * y + center(2), ...
-%                         radius * z + center(3), ...
-%                         'EdgeColor', color, ...
-%                         'LineStyle', style, ...
-%                         'LineWidth', 0.1 ...
-%                     );
                 end
             end
         end
         
-        function plotClassifiedRandomWalk3FromFiles(rootDir)
+        function plotClassifiedRandomWalk3DFromFiles(rootDir)
             filenames = Viz.getFilenames(rootDir);
             numberOfFilenames = numel(filenames);
             for indexOfFilename = 1:numberOfFilenames
@@ -1258,9 +1644,882 @@ classdef Viz < handle
                 Viz.plotClassifiedRandomWalk3(points);
             end
         end
+        
+        % fig:loop_closure
+        function plotLoopClosure(filename)
+            % default values
+            if ~exist('filename', 'var')
+                filename = ...
+                    './assets/data/paper/intersection/loop_closure.mat';
+            end
+            
+            % Plot
+            % - figure
+            Viz.figure('Loop Closure (fig:loop_closure)');
+            % - matrix
+            subplot(1, 2, 1);
+            Viz.plotOutputOfMethod(filename, 'LNN');
+            % - random-walk
+            subplot(1, 2, 2);
+            Viz.plotRandomWalkFromFile(filename);
+            axis('tight');
+            axis('equal');
+        end
+        
+        % fig:s_volume
+        function plotIntersectionOfSpheres()
+            % Plot sphere-sphere intersection
+            
+            % Parameters
+            % radius
+            r = 1;
+            % distance between two centers
+            d = 1.5;
+            d2 = d / 2;
+            % centers
+            c1 = [0, 0, 0]';
+            c2 = [d, 0, 0]';
+            centers = [c1, c2];
+            % intersection points
+            h = sqrt(r * r - d2 * d2);
+            p1 = [d2, 0, h]';
+            p2 = [d2, 0, -h]';
+            % styles
+            faceColor = Viz.color.lightGray;
+            edgeColor = Viz.color.gray;
+            
+            distanceColor = [0.4, 0.4, 0.4];
+            radiusColor = [0.5, 0.5, 0.5];
+            
+            distanceLineWidth = 2.2;
+            radiusLineWidth = 2;
+            
+            distanceLineStyle = '--';
+            radiusLineStyle = ':';
+            
+            centerArea = 49;
+            pointArea = 25;
+            
+            % Plot
+            % - figure
+            Viz.figure('Sphere-Sphere Intersection (fig:sphere_sphere_intersection)');
+            hold('on');
+            % - spheres
+            for center = centers
+                plotSphere(center, r, faceColor, edgeColor);
+            end
+            % - lines
+            Viz.plotLine(c1, c2, distanceColor, distanceLineWidth, distanceLineStyle);
+            Viz.plotLine(c1, p1, radiusColor, radiusLineWidth, radiusLineStyle);
+            Viz.plotLine(c2, p2, radiusColor, radiusLineWidth, radiusLineStyle);
+            % - points
+            plotPoint(c1, centerArea);
+            plotPoint(c2, centerArea);
+            plotPoint(p1, pointArea);
+            plotPoint(p2, pointArea);
+            
+            hold('off');
+            
+            % - config
+            view(3);
+            view([0, -15]);
+            axis('equal');
+            set(gca, ...
+                'Visible', 'off', ...
+                'Box', 'on', ...
+                'XTick', [], ...
+                'YTick', [], ...
+                'ZTick', [] ...
+            );
+            
+            % Local Functions
+            function plotSphere(center, radius, faceColor, edgeColor)
+                [x, y, z] = Viz.sphere(center, radius);
+                surf(...
+                    x, y, z, ...                    
+                    'FaceColor', faceColor,  ...
+                    'FaceAlpha', 0.1,  ...
+                    'EdgeColor', edgeColor, ...
+                    'EdgeAlpha', 0.2, ...
+                    'LineStyle', '-', ...
+                    'LineWidth', 0.1 ...
+                );
+            end
+            function plotPoint(p, markerArea)
+                scatter3(...
+                    p(1), p(2), p(3), markerArea, ...
+                    'LineWidth', 1, ...
+                    'MarkerFaceColor', [0.6, 0.6, 0.6], ...
+                    'MarkerEdgeColor', [0.3, 0.3, 0.3] ...
+                );
+            end
+        end
+        
+        % fig:3d_frustum
+        function plotFrustum()
+            % Plot frusum of a camera
+            
+            % Parameters
+            near = 2;
+            far = 6;
+            fov = pi / 6;
+            aspect = 16 / 9;
+            
+            pointColor = [0.3, 0.3, 0.3];
+            pointArea = 25;
+            
+            % Points
+            % - origin
+            O = [0, 0, 0];
+            % - near plane
+            x = near;
+            z = near * tan(fov / 2);
+            y = aspect * z;
+            A = [
+                x,  y,  z
+                x, -y,  z
+                x, -y, -z
+                x, y, -z
+            ];
+            % - far plane
+            x = far;
+            z = far * tan(fov / 2);
+            y = aspect * z;
+            % radius of circumsphere
+            r = (x^2 + y^2 + z^2) / (2 * x);
+            B = [
+                x,  y,  z
+                x, -y,  z
+                x, -y, -z
+                x, y, -z
+            ];
+        
+            % Plot
+            % - figure
+            Viz.figure('3D Frustum (fig:3d_frustum)');
+            hold('on');
+            % - pyramid
+            color = [0.3, 0.3, 0.3];
+            Viz.plotLine(O', A(1, :)', color, 1, '--');
+            Viz.plotLine(O', A(2, :)', color, 1, '--');
+            Viz.plotLine(O', A(3, :)', color, 1, '--');
+            Viz.plotLine(O', A(4, :)', color, 1, '--');
+            % - principal axis
+            %   - principal point
+            pp = [far + 3, 0, 0];
+            Viz.plotVector(O', pp', Viz.color.gray5, 1.5, '-');
+            ppA = sum(A) / size(A, 1);
+            ppB = sum(B) / size(B, 1);
+            ppAB = [ppA', ppB'];
+            scatter3(ppAB(1, :), ppAB(2, :), ppAB(3, :), 64, ...
+                'Marker', '+', ...
+                'MarkerFaceColor', Viz.color.gray2, ...
+                'MarkerEdgeColor', Viz.color.gray2 ...
+            );
+            
+            % - frustum
+            faces = [
+                1, 2, 3, 4 % near
+                5, 6, 7, 8 % far
+                1, 5, 6, 2 % top
+                2, 6, 7, 3 % right
+                4, 8, 7, 3 % bottom
+                1, 5, 8, 4 % left
+            ];
+            patch(...
+                'Vertices', [A; B], ...
+                'Faces', faces, ...
+                'LineWidth', 1, ...
+                'EdgeColor', [0.2, 0.2, 0.2], ...
+                'EdgeAlpha', 1, ...
+                'FaceColor', [0.6, 0.2, 0], ...
+                'FaceAlpha', 0.1 ...
+            );
+            % - points
+            % points = [O', A', B'];
+            points = O';
+            scatter3(points(1, :), points(2, :), points(3, :), pointArea, ...
+                'MarkerFaceColor', pointColor, ...
+                'MarkerEdgeColor', pointColor ...
+            );
+            % - circumsphere
+%             [x, y, z] = Viz.sphere([r, 0, 0]', r);
+%             surf(...
+%                 x, y, z, ...                    
+%                 'FaceColor', Viz.color.gray2,  ...
+%                 'FaceAlpha', 0.1,  ...
+%                 'EdgeColor', Viz.color.gray1, ...
+%                 'EdgeAlpha', 0.2, ...
+%                 'LineStyle', '-', ...
+%                 'LineWidth', 0.2 ...
+%             );
+        
+            hold('off');
+            % Config
+            view(3);
+            view([-45, 45]);
+            axis('square');
+            axis('equal');
+            set(gca, ...
+                'Visible', 'on', ...
+                'Box', 'on', ...
+                'XTick', [], ...
+                'YTick', [], ...
+                'ZTick', [] ...
+            );
+        end
+        
+        % fig:spheres
+        function plotSpheres()
+            % Plot frusum of a camera and its spheres
+            
+            % Parameters
+            near = 2;
+            far = 6;
+            fov = pi / 6;
+            aspect = 16 / 9;
+            
+            pointColor = [0.3, 0.3, 0.3];
+            pointArea = 25;
+            
+            % Points
+            % - origin
+            O = [0, 0, 0];
+            % - near plane
+            x = near;
+            z = near * tan(fov / 2);
+            y = aspect * z;
+            A = [
+                x,  y,  z
+                x, -y,  z
+                x, -y, -z
+                x, y, -z
+            ];
+            % - far plane
+            x = far;
+            z = far * tan(fov / 2);
+            y = aspect * z;
+            % radius of circumsphere
+            r = (x^2 + y^2 + z^2) / (2 * x);
+            B = [
+                x,  y,  z
+                x, -y,  z
+                x, -y, -z
+                x, y, -z
+            ];
+        
+            % Plot
+            % - figure
+            Viz.figure('3D Frustum (fig:3d_frustum)');
+            hold('on');
+            % - pyramid
+            color = [0.3, 0.3, 0.3];
+            Viz.plotLine(O', A(1, :)', color, 1, '--');
+            Viz.plotLine(O', A(2, :)', color, 1, '--');
+            Viz.plotLine(O', A(3, :)', color, 1, '--');
+            Viz.plotLine(O', A(4, :)', color, 1, '--');
+            % - principal axis
+            %   - principal point
+            pp = [far + 3, 0, 0];
+            Viz.plotVector(O', pp', Viz.color.gray5, 1.5, '-');
+            ppA = sum(A) / size(A, 1);
+            ppB = sum(B) / size(B, 1);
+            ppAB = [ppA', ppB'];
+            scatter3(ppAB(1, :), ppAB(2, :), ppAB(3, :), 64, ...
+                'Marker', '+', ...
+                'MarkerFaceColor', Viz.color.gray2, ...
+                'MarkerEdgeColor', Viz.color.gray2 ...
+            );
+            % - frustum
+            faces = [
+                1, 2, 3, 4 % near
+                5, 6, 7, 8 % far
+                1, 5, 6, 2 % top
+                2, 6, 7, 3 % right
+                4, 8, 7, 3 % bottom
+                1, 5, 8, 4 % left
+            ];
+            patch(...
+                'Vertices', [A; B], ...
+                'Faces', faces, ...
+                'LineWidth', 1, ...
+                'EdgeColor', [0.2, 0.2, 0.2], ...
+                'EdgeAlpha', 1, ...
+                'FaceColor', [0.6, 0.2, 0], ...
+                'FaceAlpha', 0.1 ...
+            );
+            % - points
+            points = [O', A', B'];
+            scatter3(points(1, :), points(2, :), points(3, :), pointArea, ...
+                'MarkerFaceColor', pointColor, ...
+                'MarkerEdgeColor', pointColor ...
+            );
+%             % - circumsphere of pyramid
+%             [x, y, z] = Viz.sphere([r, 0, 0]', r);
+%             c = [r, 0, 0];
+%             surf(...
+%                 x, y, z, ...                    
+%                 'FaceColor', Viz.color.gray2,  ...
+%                 'FaceAlpha', 0.1,  ...
+%                 'EdgeColor', Viz.color.gray1, ...
+%                 'EdgeAlpha', 0.2, ...
+%                 'LineStyle', '-', ...
+%                 'LineWidth', 0.2 ...
+%             );
+%             %   - center
+%             plotPoint(c, 36, 1.5, 'none', Viz.color.gray5);
+%             %   - radius
+%             P = [0, 0, 0];
+%             Viz.plotLine(c', P', Viz.color.gray5, 1, '--');
+
+            % - circumsphere of frustum
+            [x, r] = sircumsphereOfFrustum(fov, near, far, aspect);
+            c = [x, 0, 0];
+            [x, y, z] = Viz.sphere(c, r + 0.2);
+            surf(...
+                x, y, z, ...                    
+                'FaceColor', Viz.color.gray2,  ...
+                'FaceAlpha', 0.1,  ...
+                'EdgeColor', Viz.color.gray1, ...
+                'EdgeAlpha', 0.2, ...
+                'LineStyle', '-', ...
+                'LineWidth', 0.2 ...
+            );
+            %   - center
+            plotPoint(c, 36, 1, Viz.color.gray4, Viz.color.gray3);
+            %   - radius
+            P = A(1, :);
+            Viz.plotLine(c', P', Viz.color.gray2, 1, '--');
+            P = B(1, :);
+            Viz.plotLine(c', P', Viz.color.gray2, 1, '--');
+            
+%             % - insphere of frustum
+%             [x, r] = insphereOfFrustum(fov, far);
+%             c = [x, 0, 0];
+%             [x, y, z] = Viz.sphere(c, r);
+%             surf(...
+%                 x, y, z, ...                    
+%                 'FaceColor', Viz.color.gray2,  ...
+%                 'FaceAlpha', 0.1,  ...
+%                 'EdgeColor', Viz.color.gray1, ...
+%                 'EdgeAlpha', 0.2, ...
+%                 'LineStyle', '-', ...
+%                 'LineWidth', 0.2 ...
+%             );
+%             %   - center
+%             plotPoint(c, 16, 1, Viz.color.gray5, Viz.color.gray4);
+%             %   - radius
+%             P = c + [0, 0, r];
+%             Viz.plotLine(c', P', Viz.color.gray5, 1, '-');
+
+            hold('off');
+            % Config
+            view(3);
+            view([-45, 45]);
+            axis('square');
+            axis('equal');
+            set(gca, ...
+                'Visible', 'off', ...
+                'Box', 'on', ...
+                'XTick', [], ...
+                'YTick', [], ...
+                'ZTick', [] ...
+            );
+        
+            % Local Functions
+            function [x, r] = sircumsphereOfFrustum(fov, f, F, a)
+                % Parameters
+                % ----------
+                % - fov: double
+                %   Field of view
+                % - f: double
+                %   Near (focal length)
+                % - F: double
+                %   Far
+                % - a: double
+                %   Aspect ratio
+                x = (1/2)*(f+F)*(-a^2+(1+a^2)*sec(fov/2)^2);
+                r = sqrt((f+(1/2)*(f+F)*(a^2-(2*((1+a^2))/(1+cos(fov))))^2+f^2*tan(fov/2)^2*(1+a^2)));
+            end
+            
+            function [x, r] = insphereOfFrustum(fov, F)
+                x = F/(1+sin(fov/2));
+                r = F - x;
+            end
+            
+            function plotPoint(p, markerArea, lineWidth, faceColor, edgeColor)
+                scatter3(...
+                    p(1), p(2), p(3), markerArea, ...
+                    'LineWidth', lineWidth, ...
+                    'MarkerFaceColor', faceColor, ...
+                    'MarkerEdgeColor', edgeColor ...
+                );
+            end
+        end
     end
     
-    % Save
+    % - Equations
+    methods (Static)
+        function eq_cc()
+            % Variables
+            % - radius and distance
+            syms('r', 'd', 'positive');
+            % - intersection
+            %   - length
+            l(r, d) = 1 - (d/(2*r));
+            %   - area
+            % a(r, d) = (2*r^2*acos(d/(2*r))-(1/2)*d*sqrt(4*r^2-d^2))/(sym(pi)*r^2);
+            a(r, d) = (2/sym(pi))*acos(d/(2*r))-(d/(2*sym(pi)*r*r))*sqrt(4*r*r-d*d);
+            %   - volume
+            v(r, d) = ((d-2*r)^2)*(d+4*r)/(16*r^3);
+            
+            
+            % Plot
+            lineWidth = 1;
+            % - figure
+            Viz.figure('Intersection (eq:cc, eq:ss)');
+            % r is `1` because the ratio between r and d is important
+            % - length
+            fplot(...
+                l(1, d), [0, 2], ...
+                'LineWidth', lineWidth ...
+            );
+            hold('on');
+            % - area
+            fplot(...
+                a(1, d), [0, 2.05], ...
+                'LineWidth', lineWidth ...
+            );
+            % - volume
+            fplot(...
+                v(1, d), [0, 2], ...
+                'LineWidth', lineWidth ...
+            );
+            
+            hold('off');
+            
+            % Config
+            % '$\frac{2}{\pi}\arccos(\frac{d}{2r}) - \frac{d}{2\pi r^2}\sqrt{4r^2 - d^2}$'
+            % '$\frac{2 r^2 \cos ^{-1}\left(\frac{d}{2 r}\right)-\frac{1}{2} d \sqrt{4 r^2-d^2}}{\pi  r^2}$'
+            legend(...
+                {
+                    ['$', latex(l), '$']
+                    '$\frac{2 r^2 \cos ^{-1}\left(\frac{d}{2 r}\right)-\frac{1}{2} d \sqrt{4 r^2-d^2}}{\pi  r^2}$'
+                    ['$', latex(v), '$']
+                }, ...
+                'FontSize', 16, ...
+                'Interpreter', 'latex' ...
+            );
+            xlabel('$d$', 'FontSize', 14);
+            set(gca, ...
+                'XTick', [0, 2], ...
+                'XTickLabel', {...
+                    '$0$', ...
+                    '$2\,r$' ...
+                }, ...
+                'YTick', [0, 1], ...
+                'YTickLabel', {...
+                    '$0$', ...
+                    '$1$' ...
+                }, ...
+                'FontSize', 12, ...
+                'Box', 'off' ...
+            );
+
+            Viz.setLatexInterpreter();
+
+            axis('equal');
+        end
+        
+        function eq_ratio(fcn, xlabelTxt, ylabelTxt, lengendTxt, figureTitle)
+            % Plot ratio
+            %
+            % Parameters
+            % - fcn: sym
+            %   Symbolic function to plot
+            % - txt: char vector
+            %   Latex definition of function
+            % - title: char vector
+            %   Title of figure
+
+            % Plot
+            lineWidth = 2;
+            xticks = [pi/6, pi/3, 2*pi/3];
+            yticks = sort(double([
+                1
+                fcn(xticks(2))
+                fcn(xticks(3))
+            ]));
+            % - figure
+            Viz.figure(figureTitle);
+            % - circumcircle
+            fplot(...
+                fcn, [xticks(1), xticks(end)], ...
+                'LineWidth', lineWidth ...
+            );
+            
+            % Config
+            legend(...
+                {
+                    lengendTxt
+                }, ...
+                'FontSize', Viz.fontSize.legend, ...
+                'Interpreter', 'latex' ...
+            );
+            xlabel(xlabelTxt, 'FontSize', Viz.fontSize.label);
+            ylabel(ylabelTxt, 'FontSize', Viz.fontSize.label);
+            set(gca, ...
+                'XTick', xticks, ...
+                'XTickLabel', {
+                    ['$', latex(sym(xticks(1))), '$']
+                    ['$', latex(sym(xticks(2))), '$']
+                    ['$', latex(sym(xticks(3))), '$']
+                }, ...
+                'XLim', [xticks(1), xticks(end)], ...
+                'XGrid', 'on', ...
+                'YTick', yticks, ...
+                'YTickLabel', {...
+                    ['$', num2str(round(yticks(1), 1)), '$']
+                    ['$', num2str(round(yticks(2), 1)), '$']
+                    ['$', num2str(round(yticks(3), 1)), '$']
+                }, ...
+                'YLim', [yticks(1), yticks(end)], ...
+                'YGrid', 'on', ...
+                'FontSize', Viz.fontSize.axis, ...
+                'Box', 'off' ...
+            );
+            Viz.setLatexInterpreter();
+%             axis('square');
+        end
+        
+        function eq_cf_ratio()
+            % Variables
+            % - radius and distance
+            syms('a', 'positive');
+            assume(0 < a & a < sym(pi));
+            % - ratio of outcircle
+            fcn(a) = (sym(pi)*csc(a))/(1+cos(a));
+            xlabelTxt = 'fov (rad)';
+            ylabelTxt = 'area ratio';
+            legendTxt = '$$\frac{\pi  \csc (\mathrm{fov})}{1+\cos (\mathrm{fov})}$$';
+            figureTitle = 'Circumcircle-Frustum Ratio (eq:c_f_ratio)';
+            
+            % Plot
+            Viz.eq_ratio(fcn, xlabelTxt, ylabelTxt, legendTxt, figureTitle);
+        end
+        
+        function eq_icf_ratio()
+            % Variables
+            % - radius and distance
+            syms('a', 'positive');
+            assume(0 < a & a < sym(pi));
+            % - ratio of incircle
+            fcn(a) = (sym(pi)*sin(a))/(2*(1+sin(a/2))^2);
+            txt = '$\frac{\pi \sin (\mathrm{fov})}{2(1+\sin (\frac{\mathrm{fov}}{2}))^2}$';
+            title = 'Incircle-Frustum Ratio (eq:ic_f_ratio)';
+            
+            % Plot
+            Viz.eq_ratio(fcn, txt, title);
+        end
+        
+        function eq_sf_ratio()
+            % Variables
+            % - radius and distance
+            syms('a', 'positive');
+            assume(0 < a & a < sym(pi));
+            % - ratio of outcircle
+            fcn(a) = (sym(pi)*(3-cos(a))^3*cot(a/2)^2)/(8*(1+cos(a))^3);
+            xlabelTxt = 'fov (rad)';
+            ylabelTxt = 'volume ratio';
+            legendTxt = '$$\frac{\pi  (3-\cos (\mathrm{fov}))^3 \cot ^2\left(\frac{\mathrm{fov}}{2}\right)}{8 (\cos (\mathrm{fov})+1)^3}$$';
+            figureTitle = 'Circumsphere-Frustum Ratio (eq:s_f_ratio)';
+            
+            % Plot
+            Viz.eq_ratio(fcn, xlabelTxt, ylabelTxt, legendTxt, figureTitle);
+%             text(...
+%                 0.927295, ...
+%                 5.30144, ...
+%                 '\downarrow' ...
+%             );
+            annotation(...
+                'textarrow', ...
+                [0.33 0.33], ...
+                [0.3 0.19], ...
+                'String',{'$(53.1^{o},\,5.3)$'}, ...
+                'Interpreter', 'latex', ...
+                'FontSize', Viz.fontSize.label ...
+            );
+        end
+        
+        function eq_isf_ratio()
+            % Variables
+            % - radius and distance
+            syms('a', 'positive');
+            assume(0 < a & a < sym(pi));
+            % - ratio of incircle
+            fcn(a) = (sym(pi)*cot(a/2)^2)/((1+csc(a/2))^3);
+            txt = '$\frac{\pi  \cot ^2\left(\frac{\mathrm{fov}}{2}\right)}{\left(1+\csc \left(\frac{\mathrm{fov}}{2}\right)\right)^3}$';
+            title = 'Incircle-Frustum Ratio (eq:ic_f_ratio)';
+            
+            % Plot
+            Viz.eq_ratio(fcn, txt, title);
+%             text(...
+%                 0.679674, ...
+%                 0.392699, ...
+%                 '\downarrow' ...
+%             );
+            annotation(...
+                'textarrow', ...
+                [0.21 0.21], ...
+                [0.49 0.37], ...
+                'String',{'$(38.9^{o},\,0.4)$'}, ...
+                'Interpreter', 'latex' ...
+            );
+        end
+        
+        function eq_cf_ratio_2d()
+            % Variables
+            % - radius and distance
+            syms('f', 'a', 'positive');
+            assume(f > 1);
+            assume(0 < a & a < sym(pi));
+            % - intersection
+            %   - ratio
+            r(f, a) = (2*sym(pi)*(f + 1)*cot(a/2))/((f-1)*(1+cos(a))^2);
+            
+            % Plot
+            lineWidth = 1;
+            % - figure
+            Viz.figure('Circle-Frustum Ratio (eq:c_f_ratio)');
+            % - circumcircle
+            fsurf(...
+                r(f, a), [100, 10000, pi/6, 2*pi/3], ...
+                'LineWidth', lineWidth ...
+            );
+            hold('on');
+            
+            hold('off');
+            
+            % Config
+            % '$\frac{2}{\pi}\arccos(\frac{d}{2r}) - \frac{d}{2\pi r^2}\sqrt{4r^2 - d^2}$'
+            % '$\frac{2 r^2 \cos ^{-1}\left(\frac{d}{2 r}\right)-\frac{1}{2} d \sqrt{4 r^2-d^2}}{\pi  r^2}$'
+            legend(...
+                {
+                    ['$', latex(r(f, a)), '$']
+                }, ...
+                'FontSize', 16, ...
+                'Interpreter', 'latex' ...
+            );
+            xlabel('$\frac{F}{f}$', 'FontSize', 14);
+            ylabel('$fov$', 'FontSize', 14);
+%             set(gca, ...
+%                 'XTick', [0, 2], ...
+%                 'XTickLabel', {...
+%                     '$0$', ...
+%                     '$2\,r$' ...
+%                 }, ...
+%                 'YTick', [0, 1], ...
+%                 'YTickLabel', {...
+%                     '$0$', ...
+%                     '$1$' ...
+%                 }, ...
+%                 'FontSize', 12, ...
+%                 'Box', 'off' ...
+%             );
+
+            Viz.setLatexInterpreter();
+
+%             axis('equal');
+        end
+        
+        function eq_similarity()
+            % Variables
+            % - radius and distance
+            syms('r', 'd', 'positive');
+            % - intersection
+            %   - length
+            l(r, d) = 1 - (d/(2*r));
+            %   - area
+            % a(r, d) = (2*r^2*acos(d/(2*r))-(1/2)*d*sqrt(4*r^2-d^2))/(sym(pi)*r^2);
+            a(r, d) = (2/sym(pi))*acos(d/(2*r))-(d/(2*sym(pi)*r*r))*sqrt(4*r*r-d*d);
+            %   - volume
+            v(r, d) = ((d-2*r)^2)*(d+4*r)/(16*r^3);
+            %   - probabilistic
+            p(r, d) = exp(-((3/4)*(d/r))^2);
+            
+            
+            % Plot
+            lineWidth = 1;
+            % - figure
+            Viz.figure('Intersection (eq:cc, eq:ss)');
+            % r is `1` because the ratio between r and d is important
+            % - length
+            fplot(...
+                l(1, d), [0, 2], ...
+                'LineStyle', '--', ...
+                'LineWidth', lineWidth ...
+            );
+            hold('on');
+            % - area
+            fplot(...
+                a(1, d), [0, 2.05], ...
+                'LineStyle', ':', ...
+                'LineWidth', lineWidth + 0.5 ...
+            );
+            % - volume
+            fplot(...
+                v(1, d), [0, 2], ...
+                'LineStyle', '-.', ...
+                'LineWidth', lineWidth ...
+            );
+            % - probabilistic
+            fplot(...
+                p(1, d), [0, 2], ...
+                'LineStyle', '-', ...
+                'LineWidth', lineWidth ...
+            );
+            
+            hold('off');
+            
+            % Config
+            % '$\frac{2}{\pi}\arccos(\frac{d}{2r}) - \frac{d}{2\pi r^2}\sqrt{4r^2 - d^2}$'
+            % '$\frac{2 r^2 \cos ^{-1}\left(\frac{d}{2 r}\right)-\frac{1}{2} d \sqrt{4 r^2-d^2}}{\pi  r^2}$'
+            legend(...
+                {
+                    ['$$', latex(l), '$$']
+                    '$$\frac{2 r^2 \cos ^{-1}\left(\frac{d}{2 r}\right)-\frac{1}{2} d \sqrt{4 r^2-d^2}}{\pi  r^2}$$'
+                    ['$$', latex(v), '$$']
+                    '$$e^{-(\frac{3}{2}\frac{d}{r})^2}$$'
+                }, ...
+                'FontSize', Viz.fontSize.legend, ...
+                'Interpreter', 'latex' ...
+            );
+            xlabel('$d$', 'FontSize', Viz.fontSize.label);
+            ylabel('similarity', 'FontSize', Viz.fontSize.label);
+            set(gca, ...
+                'XTick', [0, 2], ...
+                'XTickLabel', {...
+                    '$0$', ...
+                    '$2\,r$' ...
+                }, ...
+                'YTick', [0, 1], ...
+                'YTickLabel', {...
+                    '$0$', ...
+                    '$1$' ...
+                }, ...
+                'YGrid', 'on', ...
+                'FontSize', Viz.fontSize.axis, ...
+                'Box', 'off' ...
+            );
+
+            Viz.setLatexInterpreter();
+
+            axis('equal');
+        end
+        
+        function eq_mvn_prod()
+            % Parameters
+            d = 1.5;
+            s = 1/3; % r = 1
+            r = 3*s;
+            m1 = [0, 0, 0];
+            m2 = m1 + [d, 0, 0];
+            
+            edgeColor = Viz.color.gray;
+            faceColor = Viz.color.lightGray;
+            circleColor = Viz.color.gray8;
+            
+            % Plot
+            % - figure
+            Viz.figure('MVN Product (eq:mvn_prod)');
+            % - first circle
+            circle(m1, r, circleColor);
+            hold('on');
+            % - second circle
+            circle(m2, r, circleColor);
+            % - first mvn
+            mvn(m1, s, edgeColor, faceColor);
+            % - second mvn
+            mvn(m2, s, edgeColor, faceColor);
+            % - first radius
+            p = [d/2, sqrt(r^2-(d/2)^2), 0];
+            Viz.plotLine(m1', p', Viz.color.gray, 2, ':');
+            plotPoint(p', 25); 
+            % - second radius
+            p = [d/2, -sqrt(r^2-(d/2)^2), 0];
+            Viz.plotLine(m2', p', Viz.color.gray, 2, ':');
+            plotPoint(p', 25);
+            % - distance
+            Viz.plotLine(m1', m2', Viz.color.gray, 2, '--');
+            hold('off');
+            
+            % Config
+            % view([0, 37]);
+            set(gca, ...
+                'Visible', 'off', ...
+                'Box', 'on', ...
+                'XTick', [], ...
+                'YTick', [], ...
+                'ZTick', [] ...
+            );
+            axis('tight');
+            axis('equal');
+            
+            % Local Functions
+            function plotPoint(p, markerArea)
+                scatter3(...
+                    p(1), p(2), p(3), markerArea, ...
+                    'LineWidth', 1, ...
+                    'MarkerFaceColor', Viz.color.gray6, ...
+                    'MarkerEdgeColor', Viz.color.gray3 ...
+                );
+            end
+            function circle(c, r, color)
+                % Parameters
+                lineWidth = 2;
+                markerArea = 36;
+
+                a = linspace(0, 2*pi, 360);
+                x = r * cos(a) + c(1);
+                y = r * sin(a) + c(2);
+                z = zeros(size(x));
+
+                % Plot
+                % - circle
+                plot3(...
+                    x, y, z, ...
+                    'Color', color, ...
+                    'LineWidth', lineWidth ...
+                );
+                hold('on');
+                % - center
+                plotPoint(c, markerArea);
+            end
+            function mvn(m, s, edgeColor, faceColor)
+                x = linspace(m(1) - 3*s, m(1) + 3*s, 30);
+                y = linspace(m(2) - 3*s, m(2) + 3*s, 30);
+                [X, Y] = meshgrid(x, y);
+                Z = (1/(2*pi*s^2))*exp(-((X-m(1)).^2+(Y-m(2)).^2)/(2*s^2));
+
+                % Plot
+                % - gaussian
+                surf(...
+                    X, Y, Z, ...
+                    'EdgeColor', edgeColor, ...
+                    'EdgeAlpha', 0.2, ...
+                    'FaceColor', faceColor, ...
+                    'FaceAlpha', 0.1 ...
+                );
+            end
+        end
+    end
+    
+    % Paper: SLAM
+    methods (Static)
+        
+    end
+    
+    % Summary
     methods (Static)
         function printSummary(rootDir)
             % Print summary of results
@@ -1337,6 +2596,5 @@ classdef Viz < handle
             runtests('./tests/TestViz.m');
         end
     end
-    
 end
 
