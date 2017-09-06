@@ -21,4 +21,5 @@ octave-workspace
 *.mat
 # `roc` folder
 roc/
-
+# `slam` folder
+slam/
