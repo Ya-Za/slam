@@ -21,12 +21,25 @@ classdef RandomWalk < handle
     end
     
     methods
+        function obj = RandomWalk(...
+                std, ...
+                maxDistance, ...
+                numberOfPoints, ...
+                numberOfDimensions ...
+            )
+            % Construtor
+            
+            obj.std = std;
+            obj.maxDistance = maxDistance;
+            obj.numberOfPoints = numberOfPoints;
+            obj.numberOfDimensions = numberOfDimensions;
+        end
         function points = getPoints(obj)
             % Get points of gaussian random walk
             %
             % Returns
             % -------
-            % - points: double matrix
+            % - points: d-by-n double matrix
             %   Ouput pionts. [p1, p2, ...] 
             
             % points
@@ -34,6 +47,7 @@ classdef RandomWalk < handle
             points = zeros(obj.numberOfDimensions, obj.numberOfPoints);
             
             % - generate
+            % the first point is zero
             for indexOfPoint = 2:obj.numberOfPoints
                 for indexOfDimension = 1:obj.numberOfDimensions
                     value = points(indexOfDimension, indexOfPoint - 1);
@@ -132,7 +146,7 @@ classdef RandomWalk < handle
             % ----------
             % - filename: char vector
             %   Path of output file
-            % - points: double matrix
+            % - points: d-by-n double matrix
             %   Ouput pionts. [p1, p2, ...]
             
             config = struct(...
