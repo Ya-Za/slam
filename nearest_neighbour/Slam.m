@@ -4,18 +4,29 @@ classdef Slam
     properties
     end
     
+    % Input
     methods (Static)
-        function samplesDir = makeAndSaveRandomWalks(s, D, n, d, rootDir, N)
+        function samplesDir = makeAndSaveRandomWalks(...
+                std, ...
+                noiseStd, ...
+                maxDistance, ...
+                numberOfPoints, ...
+                numberOfDimensions, ...
+                rootDir, ...
+                numberOfSamples ...
+        )
             % Make and save random-walks
             %
             % Parameters
-            % - s: double
+            % - std: double
             %   Standard deviation
-            % - D: double
+            % - noiseStd: double
+            %   Standard deviation of noise
+            % - maxDistance: double
             %   Maximum distance from origin
-            % - n: int
+            % - numberOfPoints: int
             %   Number of points
-            % - d: int
+            % - numberOfDimensions: int
             %   Number of dimenstions
             % - rootDir: char vector
             %   Root directory
@@ -23,22 +34,42 @@ classdef Slam
             %   Number of samples
             
             % make
-            rw = RandomWalk(s, D, n, d);
+            rw = RandomWalk(std, maxDistance, numberOfPoints, numberOfDimensions);
             % save
-            samplesDir = rw.saveSamples(rootDir, N);
+            samplesDir = rw.saveSamples(rootDir, numberOfSamples);
             
-            % add orientations
+            % add orientations and noises
             filenames = Viz.getFilenames(samplesDir);
             for i = 1:numel(filenames)
                 filename = filenames{i};
-                input = getfield(load(filename), 'input');
+                sample = load(filename);
+                input = sample.input;
+                
+                % - orientations
                 input.orientations = rw.getPoints();
+                
+                % - noise
+                %   - locations
+                input.locationNoises = makeNoises(noiseStd, numberOfPoints, numberOfDimensions);
+                %   - orientations
+                input.orientationNoises = makeNoises(noiseStd, numberOfPoints, numberOfDimensions);
+                %   - config
+                input.config.noiseStd = noiseStd;
+                
                 save(filename, 'input');
+            end
+            
+            % Local functions
+            function noises = makeNoises(std, n, d)
+                noises = zeros(n, n, d);
+                for dimension = 1:d
+                    noises(:, :, dimension) = tril(std * randn(n), -1);
+                end
             end
         end
         function plotAndSaveResults(rootDir)
             % Make `results` folder in `roodDir` folder, then plot and save
-            % `results` in it
+            % results in it
             %
             % Parameters
             % ----------
@@ -53,7 +84,248 @@ classdef Slam
             end
             
             % plot and save
+            %   - random walk
             Slam.plotCameraRandomWalksFromDir(rootDir, outDir);
+            %   - drift
+            %       - icp
+            Slam.plotDriftOfMethodFromDir(rootDir, 'icp', outDir);
+            %       - picp
+            Slam.plotDriftOfMethodFromDir(rootDir, 'picp', outDir);
+        end
+    end
+    
+    % Output
+    methods (Static)
+        % icp
+        function estimatedLocations = icpLocations(actualLocations, noises)
+            % Get estimated-locations of `icp`
+            
+            [d, n] = size(actualLocations);
+            estimatedLocations = zeros(d, n);
+            
+            for i = 2:n
+                estimatedLocations(:, i) = ...
+                    estimatedLocations(:, i - 1) + ...
+                    actualLocations(:, i) - actualLocations(:, i - 1) + ...
+                    getNoiseVector(i);
+            end
+            
+            % Local functions
+            function noiseVector = getNoiseVector(i)
+                noiseVector = zeros(d, 1);
+                for j = 1:d
+                    noiseVector(j) = noises(i, i - 1, j);
+                end
+            end
+        end
+        function estimatedOrientations = icpOrientations(actualOrientations, noises)
+            % Get estimated-orientations of `icp`
+            
+            estimatedOrientations = Slam.icpLocations(...
+                actualOrientations, ...
+                noises ...
+            );
+%             estimatedOrientations = Slam.pointsToOrientations(...
+%                 estimatedOrientations ...
+%             );
+        end
+        function [estimatedLocations, estimatedOrientations] = icp(...
+                locations, locationNoises, ...
+                orientations, orientationNoises ...
+        )
+            % Get estimated-locations and estimated-orientations of `icp`
+            
+            estimatedLocations = Slam.icpLocations(...
+                locations, ...
+                locationNoises ...
+            );
+            estimatedOrientations = Slam.icpOrientations(...
+                orientations, ...
+                orientationNoises ...
+            );
+        end
+        % picp (probabilistic icp)
+        function estimatedLocations = picpLocations(actualLocations, noises)
+            % Get estimated-locations of `picp`
+            r = 2;
+            rr = 2 * r;
+            eps = 1e-3;
+            
+            [d, n] = size(actualLocations);
+            estimatedLocations = zeros(d, n);
+            
+            for i = 2:n
+                firstGuess = getNoisyTranslation(i, i - 1);
+                
+                predictions = [];
+                variances = [];
+                for j = 1:(i - 1)
+                    dist = norm(firstGuess - estimatedLocations(:, j));
+                    if dist < rr
+                        predictions(:, end + 1) = ...
+                            estimatedLocations(:, j) + ...
+                            getNoisyTranslation(i, j);
+                        
+                        var = (1.5 * dist / r)^2;
+                        if var < eps
+                            var = eps;
+                        end
+                        variances(end + 1) = var;
+                    end
+                end
+                
+                if isempty(predictions)
+                    estimatedLocations(:, i) = firstGuess;
+                else
+                    estimatedLocations(:, i) = update(predictions, variances);
+                end
+            end
+            
+            % Local functions
+            function noiseVector = getNoiseVector(i, j)
+                noiseVector = zeros(d, 1);
+                for dimenstionIndex = 1:d
+                    noiseVector(dimenstionIndex) = noises(i, j, dimenstionIndex);
+                end
+            end
+            function translation = getTranslation(i, j)
+                translation = ...
+                    actualLocations(:, i) - actualLocations(:, j);
+            end
+            function noisyTranslation = getNoisyTranslation(i, j)
+                noisyTranslation = ...
+                    getTranslation(i, j)+ ...
+                    getNoiseVector(i, j);
+            end
+            function location = update(predictions, variances)
+                variances = 1 ./ variances;
+                V =  1 / sum(variances);
+                variances = V * variances;
+                location = sum(variances .* predictions, 2);
+            end
+        end
+        function estimatedOrientations = picpOrientations(actualOrientations, noises)
+            % Get estimated-orientations of `picp`
+            
+            estimatedOrientations = Slam.picpLocations(...
+                actualOrientations, ...
+                noises ...
+            );
+%             estimatedOrientations = Slam.pointsToOrientations(...
+%                 estimatedOrientations ...
+%             );
+        end
+        function [estimatedLocations, estimatedOrientations] = picp(...
+                locations, locationNoises, ...
+                orientations, orientationNoises ...
+        )
+            % Get estimated-locations and estimated-orientations of `picp`
+            
+            estimatedLocations = Slam.picpLocations(...
+                locations, ...
+                locationNoises ...
+            );
+            estimatedOrientations = Slam.picpOrientations(...
+                orientations, ...
+                orientationNoises ...
+            );
+        end
+        % method
+        function [estimatedLocations, estimatedOrientations] = methodFromFile(filename, methodName)
+            % Get estimated-locations and estimated-orientations of given
+            % method from input filename and save them to the
+            % `output.icp.locations` and `output.icp.orientations` fields
+            
+            sample = load(filename); 
+            input = sample.input;
+            if isfield(sample, 'output')
+                output = sample.output;
+            end
+            
+
+            [estimatedLocations, estimatedOrientations] = Slam.(methodName)(...
+                input.points, ...
+                input.locationNoises, ...
+                input.orientations, ...
+                input.orientationNoises ...
+            );
+        
+            output.(methodName).locations = estimatedLocations;
+            output.(methodName).orientations = estimatedOrientations;
+            
+            save(filename, 'output', '-append');
+        end
+        function methodFromDir(samplesDir, methodName)
+            % Iterative closest point
+            
+            filenames = Viz.getFilenames(samplesDir);
+            for i = 1:numel(filenames)
+                Slam.methodFromFile(filenames{i}, methodName);
+            end
+        end
+        
+        % error
+        function error = locationsError(actualLocations, estimatedLocations)
+            % RMSE of locations
+            
+            error = 0;
+            n = size(actualLocations, 2);
+            for i = 1:n
+                t = actualLocations(:, i);
+                t_ = estimatedLocations(:, i);
+                error = error + norm(t - t_, 2) ^ 2;
+            end
+            
+            error = sqrt(error / n);
+        end
+        
+        function error = orientationsError(actualPoints, estimatedPoints)
+            % RMSE of locations
+            
+            error = 0;
+            n = size(actualPoints, 2);
+            
+            actualOrientations = Slam.pointsToOrientations(actualPoints);
+            estimatedOrientations = Slam.pointsToOrientations(estimatedPoints);
+            for i = 1:n
+                R = actualOrientations(:, :, i);
+                R_ = estimatedOrientations(:, :, i);
+                error = error + norm(R - R_, 'fro') ^ 2;
+            end
+            
+            error = sqrt(error / n);
+        end
+        
+        function methodErrorFromFile(filename, methodName)
+            % RMSE of locations and orientations of specified method from 
+            % input filename
+            
+            sample = load(filename); 
+            input = sample.input;
+            output = sample.output;
+
+            locationsError = Slam.locationsError(...
+                input.points, ...
+                output.(methodName).locations ...
+            );
+            orientationsError = Slam.orientationsError(...
+                input.orientations, ...
+                output.(methodName).orientations ...
+            );
+        
+            output.(methodName).locationsError = locationsError;
+            output.(methodName).orientationsError = orientationsError;
+            
+            save(filename, 'output', '-append');
+        end
+        function methodErrorFromDir(samplesDir, methodName)
+            % RMSE of locations and orientations of specified method from
+            % samples-directory
+            
+            filenames = Viz.getFilenames(samplesDir);
+            for i = 1:numel(filenames)
+                Slam.methodErrorFromFile(filenames{i}, methodName);
+            end
         end
     end
     
@@ -71,7 +343,7 @@ classdef Slam
             % -------
             % - orientations: 3-by-3-by-n double array
             %   Rotation matrices
-            
+
             n = size(points, 2);
             
             orientations = zeros(3, 3, n);
@@ -79,6 +351,7 @@ classdef Slam
                 orientations(:, :, i) = pointToOrientation(points(:, i));
             end
             
+            % Local functions
             function R = pointToOrientation(point)
                 % Convert 3D point to 3D rotation matrix
                 %
@@ -106,7 +379,6 @@ classdef Slam
                 
                 R = axisAngleToRotationMatrix(ax, a);
             end
-            
             function R = axisAngleToRotationMatrix(ax, a)
                 % Convert 3D axis and angle to 3D rotation matrix
                 %
@@ -143,6 +415,16 @@ classdef Slam
                 ];
             end
         end
+        function props = updateProperties(props1, props2)
+            % Uupdate fields of `props2` to `props1`
+            
+            props = props1;
+            names = fieldnames(props2);
+            for i = 1:numel(names)
+                props.(names{i}) = props2.(names{i});
+            end
+        end
+        % camera random-walk
         function plotCameraRandomWalksFromDir(rootDir, outDir)
             % Plot camera random-walks from dir
             %
@@ -169,13 +451,16 @@ classdef Slam
                 );
                 Viz.figure(title);
                 
-                filename = filenames{i};
-                
-                Slam.plotCameraRandomWalkFromFile(filename);
+                Slam.plotCameraRandomWalkFromFile(filenames{i});
                 
                 % - save
                 if ~isempty(outDir)
-                    savefig(fullfile(outDir, ['rw', num2str(i)]));
+                    savefig(...
+                        fullfile(...
+                            outDir, ...
+                            sprintf('rw_%d', i) ...
+                        ) ...
+                    );
                 end
             end
         end
@@ -196,32 +481,37 @@ classdef Slam
 
             Slam.plotCameraRandomWalk(locations, orientations);
         end
-        function plotCameraRandomWalk(locations, orientations)
+        function plotCameraRandomWalk(locations, orientations, props)
             % Plot camera random-walk
+            
+            % default values
+            if (~exist('props', 'var'))
+                props = struct();
+            end
+            
+            % properties
+            P.lineColor = Viz.color.lightGray;
+            P.cameraSize = 0.2;
+            P.firstCameraColor = [0.2, 0.5, 0.2];
+            P.cameraColor = [0.5, 0.2, 0.2];
+            P.lastCameraColor = [0.2, 0.2, 0.5];
+            P.cameraOpacity = 0;
+            P.cameraVisibility = true;
+            P.cameraAxesVisibility = false;
+            
+            P = Slam.updateProperties(P, props);
             
             % Plot
             % - line
-            %   - properties
-            lineColor = Viz.color.lightGray;
-            
-            %   - plot
             line(...
                 'XData', locations(1, :), ...
                 'YData', locations(2, :), ...
                 'ZData', locations(3, :), ...
-                'Color', lineColor ...
+                'Color', P.lineColor ...
             );
         
             % - camera
             hold('on');
-            %   - properties
-            cameraSize = 0.2;
-            firstCameraColor = [0.2, 0.5, 0.2];
-            cameraColor = [0.5, 0.2, 0.2];
-            lastCameraColor = [0.2, 0.2, 0.5];
-            cameraOpacity = 0;
-            cameraVisibility = true;
-            cameraAxesVisibility = false;
             
             %   - plot
             n = size(locations, 2);
@@ -232,12 +522,12 @@ classdef Slam
             plotCamera(...
                 'Location', locations(:, i)', ...
                 'Orientation', orientations(:, :, i)', ...
-                'Size', cameraSize, ...
+                'Size', P.cameraSize, ...
                 'Label', cameraLabel, ...
-                'Color', firstCameraColor, ...
-                'Opacity', cameraOpacity, ...
-                'Visible', cameraVisibility, ...
-                'AxesVisible', cameraAxesVisibility ...
+                'Color', P.firstCameraColor, ...
+                'Opacity', P.cameraOpacity, ...
+                'Visible', P.cameraVisibility, ...
+                'AxesVisible', P.cameraAxesVisibility ...
             );
             %   - others
             for i = 2:(n - 1)
@@ -246,12 +536,12 @@ classdef Slam
                 plotCamera(...
                     'Location', locations(:, i)', ...
                     'Orientation', orientations(:, :, i)', ...
-                    'Size', cameraSize, ...
+                    'Size', P.cameraSize, ...
                     'Label', cameraLabel, ...
-                    'Color', cameraColor, ...
-                    'Opacity', cameraOpacity, ...
-                    'Visible', cameraVisibility, ...
-                    'AxesVisible', cameraAxesVisibility ...
+                    'Color', P.cameraColor, ...
+                    'Opacity', P.cameraOpacity, ...
+                    'Visible', P.cameraVisibility, ...
+                    'AxesVisible', P.cameraAxesVisibility ...
                 );
             end
              %   - last
@@ -261,12 +551,12 @@ classdef Slam
             plotCamera(...
                 'Location', locations(:, i)', ...
                 'Orientation', orientations(:, :, i)', ...
-                'Size', cameraSize, ...
+                'Size', P.cameraSize, ...
                 'Label', cameraLabel, ...
-                'Color', lastCameraColor, ...
-                'Opacity', cameraOpacity, ...
-                'Visible', cameraVisibility, ...
-                'AxesVisible', cameraAxesVisibility ...
+                'Color', P.lastCameraColor, ...
+                'Opacity', P.cameraOpacity, ...
+                'Visible', P.cameraVisibility, ...
+                'AxesVisible', P.cameraAxesVisibility ...
             );
             
             hold('off');
@@ -281,6 +571,133 @@ classdef Slam
             axis('square');
             view(3);
         end
+        % drift
+        function plotDriftOfMethodFromDir(rootDir, methodName, outDir)
+            % Plot drift of specific method from dir
+            %
+            % Parameters
+            % ----------
+            % - rootDir: char vector
+            %   Path of input directory
+            % - methodName: char vector
+            %   Name of method
+            % - outDir: cahr vector
+            %   Path of output directory
+            
+            % default values
+            if ~exist('outDir', 'var')
+                outDir = [];
+            end
+            
+            % filenames
+            filenames = Viz.getFilenames(rootDir);
+            
+            for i = 1:numel(filenames)
+                % figure
+                title = sprintf(...
+                    'Plot Drift of %s Method - Sample %d', ...
+                    methodName, ...
+                    i ...
+                );
+                Viz.figure(title);
+                
+                Slam.plotDriftOfMethodFromFile(filenames{i}, methodName);
+                
+                % - save
+                if ~isempty(outDir)
+                    savefig(...
+                        fullfile(...
+                            outDir, ...
+                            sprintf('%s_drift_%d', methodName, i) ...
+                        ) ...
+                    );
+                end
+            end
+        end
+        function plotDriftOfMethodFromFile(filename, methodName)
+            % Plot drift of specific method from dir
+            %
+            % Parameters
+            % ----------
+            % - filename: char vector
+            %   Filename of random-walk sample
+            % - methodName: char vector
+            %   Name of method
+            
+            sample = load(filename);
+            
+            actualLocations = sample.input.points;
+            actualOrientations = Slam.pointsToOrientations(...
+                sample.input.orientations ...
+            );
+            estimatedLocations = sample.output.(methodName).locations;
+            estimatedOrientations = Slam.pointsToOrientations(...
+                sample.output.(methodName).orientations ...
+            );
+
+            Slam.plotDrift(...
+                actualLocations, ...
+                actualOrientations, ...
+                estimatedLocations, ...
+                estimatedOrientations ...
+            );
+        end
+        function plotDrift(...
+            actualLocations, ...
+            actualOrientations, ...
+            estimatedLocations, ...
+            estimatedOrientations ...
+        )
+            % Plot drift
+            %
+            % Parameters
+            % ----------
+            % - actualLocations: d-by-n double matrix
+            %   Actual camera locations
+            % - actualOrientations: d-by-d-by-n duble array
+            %   Actual camera orientations
+            % - estimatedLocations: d-by-n double matrix
+            %   Estimated camera locations
+            % - estimatedOrientations: d-by-d-by-n duble array
+            %   Estimated camera orientations
+            
+            % properties
+            blue = [0.2, 0.2, 0.5];
+            red = [0.5, 0.2, 0.2];
+            cameraSize = 0.1;
+            actualProps = struct(...
+                'lineColor', blue, ...
+                'cameraSize', cameraSize, ...
+                'firstCameraColor', blue, ...
+                'cameraColor', blue, ...
+                'lastCameraColor', blue, ...
+                'cameraVisibility', true ...
+            );
+            estimatedProps = struct(...
+                'lineColor', red, ...
+                'cameraSize', cameraSize, ...
+                'firstCameraColor', red, ...
+                'cameraColor', red, ...
+                'lastCameraColor', red, ...
+                'cameraVisibility', true ...
+            );
+            
+            % actual
+            Slam.plotCameraRandomWalk(...
+                actualLocations, ...
+                actualOrientations, ...
+                actualProps ...
+            );
+            hold('on');
+            
+            % estimated
+            Slam.plotCameraRandomWalk(...
+                estimatedLocations, ...
+                estimatedOrientations, ...
+                estimatedProps ...
+            );
+            hold('off');
+        end
     end
     
     % Main
@@ -289,33 +706,42 @@ classdef Slam
         function main()
             % Random-walk
             
-            % - make and save
-            s = 1;
-            D = 10;
-            n = 100;
-            d = 3;
+            % - options
+            std = 1;
+            noiseStd = 0.1;
+            maxDistance = 10;
+            numberOfPoints = 20;
+            numberOfDimensions = 3;
             rootDir = './assets/slam/data';
-            N = 9;
+            numberOfSamples = 1;
             
+            % - input
             samplesDir = Slam.makeAndSaveRandomWalks(...
-                s, ...
-                D, ...
-                n, ...
-                d, ...
+                std, ...
+                noiseStd, ...
+                maxDistance, ...
+                numberOfPoints, ...
+                numberOfDimensions, ...
                 rootDir, ...
-                N ...
+                numberOfSamples ...
             );
             
+            % - output
+            %   - icp
+            Slam.methodFromDir(samplesDir, 'icp');
+            %   - picp
+            Slam.methodFromDir(samplesDir, 'picp');
             
+            % - error
+            %   - icp
+            Slam.methodErrorFromDir(samplesDir, 'icp');
+            %   - picp
+            Slam.methodErrorFromDir(samplesDir, 'picp');
             
-            % - plot and save
-            %   - camera locations
+            % - viz
             Slam.plotAndSaveResults(samplesDir);
-            %   - camera poses (location + orientation)
-            %   - camera axes
-            %   - circumspheres
+            
         end
     end
     
 end
-
