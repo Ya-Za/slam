@@ -4,8 +4,8 @@ classdef BaseNN < handle
     properties
         % Properties
         % ----------
-        % - points: double matrix
-        %   [p1, p2, ...]
+        % - points: cell array of double vectors
+        %   {p1, p2, ...}
         % - intersectionObj: Intersection
         %   Has `haveIntersection` method
         % - info: struct
@@ -35,6 +35,24 @@ classdef BaseNN < handle
             %   Input point
 
             obj.points{end + 1} = point;
+        end
+        
+        function output = filter(obj, point, candidates)
+            % Linear search to filter the candidate solutions
+            %
+            % Parameters
+            % ----------
+            % - point: double vector
+            %   Query point
+            % - candidates: index vector
+            %   Candidate solutions
+            
+            output = candidates(...
+                arrayfun(...
+                    @(x) obj.intersectionObj.haveIntersection(point, obj.points{x}), ...
+                    candidates ...
+                ) ...
+            );
         end
     end
     
