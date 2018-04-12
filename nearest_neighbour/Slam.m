@@ -153,6 +153,7 @@ classdef Slam
             
             [d, n] = size(actualLocations);
             estimatedLocations = zeros(d, n);
+            V = zeros(1, n); % variance of each position
             
             for i = 2:n
                 firstGuess = getNoisyTranslation(i, i - 1);
@@ -166,7 +167,7 @@ classdef Slam
                             estimatedLocations(:, j) + ...
                             getNoisyTranslation(i, j);
                         
-                        var = (1.5 * dist / r)^2;
+                        var = V(j) + (1.5 * dist / r)^2;
                         if var < eps
                             var = eps;
                         end
@@ -177,7 +178,7 @@ classdef Slam
                 if isempty(predictions)
                     estimatedLocations(:, i) = firstGuess;
                 else
-                    estimatedLocations(:, i) = update(predictions, variances);
+                    [estimatedLocations(:, i), V(i)] = update(predictions, variances);
                 end
             end
             
@@ -197,7 +198,7 @@ classdef Slam
                     getTranslation(i, j)+ ...
                     getNoiseVector(i, j);
             end
-            function location = update(predictions, variances)
+            function [location, V] = update(predictions, variances)
                 variances = 1 ./ variances;
                 V =  1 / sum(variances);
                 variances = V * variances;
@@ -263,7 +264,6 @@ classdef Slam
                 Slam.methodFromFile(filenames{i}, methodName);
             end
         end
-        
         % error
         function error = locationsError(actualLocations, estimatedLocations)
             % RMSE of locations
@@ -278,7 +278,6 @@ classdef Slam
             
             error = sqrt(error / n);
         end
-        
         function error = orientationsError(actualPoints, estimatedPoints)
             % RMSE of locations
             
@@ -295,7 +294,6 @@ classdef Slam
             
             error = sqrt(error / n);
         end
-        
         function methodErrorFromFile(filename, methodName)
             % RMSE of locations and orientations of specified method from 
             % input filename
@@ -493,8 +491,8 @@ classdef Slam
             P.lineColor = Viz.color.lightGray;
             P.cameraSize = 0.2;
             P.firstCameraColor = [0.2, 0.5, 0.2];
-            P.cameraColor = [0.5, 0.2, 0.2];
-            P.lastCameraColor = [0.2, 0.2, 0.5];
+            P.cameraColor = [0.2, 0.2, 0.5];
+            P.lastCameraColor = [0.5, 0.2, 0.2];
             P.cameraOpacity = 0;
             P.cameraVisibility = true;
             P.cameraAxesVisibility = false;
@@ -568,8 +566,10 @@ classdef Slam
                 'YTick', [], ...
                 'ZTick', [] ...
             );
-            axis('square');
+            axis('equal');
+            axis('tight');
             view(3);
+            view(-45, 30);
         end
         % drift
         function plotDriftOfMethodFromDir(rootDir, methodName, outDir)
@@ -664,7 +664,7 @@ classdef Slam
             % properties
             blue = [0.2, 0.2, 0.5];
             red = [0.5, 0.2, 0.2];
-            cameraSize = 0.1;
+            cameraSize = 0.2;
             actualProps = struct(...
                 'lineColor', blue, ...
                 'cameraSize', cameraSize, ...
@@ -698,49 +698,211 @@ classdef Slam
             );
             hold('off');
         end
+        % rmse
+        function [numberOfPoints, locationsError, orientationsError] = ...
+                getMethodErrorFromFile(filename, methodName)
+            
+            sample = load(filename);
+            
+            numberOfPoints = sample.input.config.numberOfPoints;
+            locationsError = sample.output.(methodName).locationsError;
+            orientationsError = sample.output.(methodName).orientationsError;
+        end
+        function [numberOfPoints, locationsError, orientationsError] = getMethodErrorFromDir(rootDir, methodName)
+            
+            % filenames
+            filenames = Viz.getFilenames(fullfile(rootDir, '**'));
+            n = numel(filenames);
+            
+            numberOfPoints = zeros(n, 1);
+            locationsError = zeros(n, 1);
+            orientationsError = zeros(n, 1);
+            for i = 1:n
+                [
+                    numberOfPoints(i), ...
+                    locationsError(i), ...
+                    orientationsError(i) ...
+                ] = Slam.getMethodErrorFromFile(...
+                    filenames{i}, ...
+                    methodName ...
+                );
+            end
+            
+            T = table(...
+                numberOfPoints, ...
+                locationsError, ...
+                orientationsError, ...
+                'VariableNames', {
+                    'numberOfPoints'
+                    'locationsError'
+                    'orientationsError'
+                } ...
+            );
+        
+            % mean
+            M = varfun(@mean, T, 'GroupingVariables', 'numberOfPoints');
+            numberOfPoints = M.numberOfPoints;
+            locationsError = M.mean_locationsError;
+            orientationsError = M.mean_orientationsError;
+            
+            % mean
+            S = varfun(@std, T, 'GroupingVariables', 'numberOfPoints');
+            locationsError(:, 2) = S.std_locationsError;
+            orientationsError(:, 2) = S.std_orientationsError;
+        end
+        function plotErrors()
+            rootDir = './assets/slam/data';
+            
+            % errors
+            % - icp
+            methodName = 'icp';
+            [...
+                numberOfPoints, ...
+                icpLocationsError, ...
+                icpOrientationsError ...
+            ] = Slam.getMethodErrorFromDir(rootDir, methodName);
+            % - picp
+            methodName = 'picp';
+            [...
+                ~, ...
+                picpLocationsError, ...
+                picpOrientationsError ...
+            ] = Slam.getMethodErrorFromDir(rootDir, methodName);
+            
+            % plot
+            % - locations
+            plotErrorBar(...
+                numberOfPoints, ...
+                icpLocationsError, ...
+                picpLocationsError, ...
+                'Locations' ...
+            );
+            % - orientations
+            plotErrorBar(...
+                numberOfPoints, ...
+                icpOrientationsError, ...
+                picpOrientationsError, ...
+                'Orientations' ...
+            );
+            
+            % Local functions
+            function plotErrorBar(x, y1, y2, name)
+                % - properties
+                lineWidth = 1;
+                marker = 's';
+                % - locations
+                Viz.figure(sprintf('Camera %s RMSE', name));
+                errorbar(...
+                    x, ...
+                    y1(:, 1), ...
+                    y1(:, 2), ...
+                    'Marker', marker, ...
+                    'LineWidth', lineWidth ...
+                );
+                hold('on');
+                errorbar(...
+                    x, ...
+                    y2(:, 1), ...
+                    y2(:, 2), ...
+                    'Marker', marker, ...
+                    'LineWidth', lineWidth ...
+                );
+                hold('off');
+                % - config
+                title(...
+                    sprintf('Camera %s', name), ...
+                    'FontSize', Viz.fontSize.title ...
+                );
+                xlabel(...
+                    'N', ...
+                    'FontSize', Viz.fontSize.axis ...
+                );
+                ylabel(...
+                    'RMSE', ...
+                    'FontSize', Viz.fontSize.axis ...
+                );
+
+                legend(...
+                    {'ICP', 'Probabilistic ICP'}, ...
+                    'FontSize', Viz.fontSize.legend ...
+                );
+
+                box('off');
+
+                x(2) = [];
+                set(gca, ...
+                    'XTick', x, ...
+                    'YGrid', 'on', ...
+                    'FontSize', Viz.fontSize.label ...
+                );
+            end
+        end
     end
     
     % Main
     methods (Static)
-        % todo: change the name of `main` to `randomWalk`
         function main()
-            % Random-walk
+            % Main
             
-            % - options
+            % properties
+            % - static fields
             std = 1;
-            noiseStd = 0.1;
-            maxDistance = 10;
-            numberOfPoints = 20;
+            noiseStd = 1;
             numberOfDimensions = 3;
             rootDir = './assets/slam/data';
-            numberOfSamples = 1;
+            numberOfSamples = 10;
+            maxDistance = 1000;
+            % - dynamic fields
+            numberOfPoints = [10, 20, 50, 100, 200, 500, 1000];
             
-            % - input
+            % props
+            props = struct();
+            % - static fields
+            props.std = std;
+            props.noiseStd = noiseStd;
+            props.numberOfDimensions = numberOfDimensions;
+            props.rootDir = rootDir;
+            props.numberOfSamples = numberOfSamples;    
+            props.maxDistance = maxDistance;
+                
+            for i = 1:numel(numberOfPoints)
+                % - dynamic fields
+                props.numberOfPoints = numberOfPoints(i);
+                
+                tic();
+                Slam.run(props);
+                toc();
+            end
+            
+        end
+        function run(props)
+            % Run
+            
+            % input
             samplesDir = Slam.makeAndSaveRandomWalks(...
-                std, ...
-                noiseStd, ...
-                maxDistance, ...
-                numberOfPoints, ...
-                numberOfDimensions, ...
-                rootDir, ...
-                numberOfSamples ...
+                props.std, ...
+                props.noiseStd, ...
+                props.maxDistance, ...
+                props.numberOfPoints, ...
+                props.numberOfDimensions, ...
+                props.rootDir, ...
+                props.numberOfSamples ...
             );
             
-            % - output
-            %   - icp
+            % output
+            % - icp
             Slam.methodFromDir(samplesDir, 'icp');
-            %   - picp
+            % - picp
             Slam.methodFromDir(samplesDir, 'picp');
             
-            % - error
-            %   - icp
+            % error
+            % - icp
             Slam.methodErrorFromDir(samplesDir, 'icp');
-            %   - picp
+            % - picp
             Slam.methodErrorFromDir(samplesDir, 'picp');
             
             % - viz
-            Slam.plotAndSaveResults(samplesDir);
-            
+            % Slam.plotAndSaveResults(samplesDir);
         end
     end
     

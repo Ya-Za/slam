@@ -23,12 +23,12 @@ for indexOfFilename = 1:numberOfFilenames
     
     tic();
     % generate and save random-walks
-    % todo: make constructor for `RandomWalk` which gives `config` as input
-    rw = RandomWalk();
-    rw.std = config.std;
-    rw.maxDistance = config.maxDistance;
-    rw.numberOfPoints = config.numberOfPoints;
-    rw.numberOfDimensions = config.numberOfDimensions;
+    rw = RandomWalk(...
+        config.std, ...
+        config.maxDistance, ...
+        config.numberOfPoints, ...
+        config.numberOfDimensions ...
+    );
     
     samplesDir = rw.saveSamples(rootDir, config.numberOfSamples);
     
