@@ -55,18 +55,20 @@ classdef BaseNN < handle
             );
         end
     end
-    
-    methods (Abstract)
-        output = query(obj, point)
-        %   Parameters
-        %   ----------
-        %   - point: double vector
-        %     Input point
-        %
-        %   Returns
-        %   -------
-        %   - output: int array
-        %     Array of indexes which determines neighbours of input `point`
+
+    % Abstract Methods
+    methods
+        function output = query(obj, point)
+            %   Parameters
+            %   ----------
+            %   - point: double vector
+            %     Input point
+            %
+            %   Returns
+            %   -------
+            %   - output: int array
+            %     Array of indexes which determines neighbours of input `point`
+            output = [];
+        end
     end
-    
 end

@@ -6,10 +6,18 @@ classdef Intersection < handle
         % ----------
         % - radius: double = 1
 
-        radius = 1;
+        radius
     end
     
     methods
+        function obj = Intersection(radius)
+            % Constructor
+            if ~exist('radius', 'var')
+                radius = 1;
+            end
+            
+            obj.radius = radius;
+        end
         function tf = haveIntersection(obj, c1, c2)
             % Check two given hyper spheres have intersection
             %

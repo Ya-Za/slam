@@ -1,4 +1,4 @@
-classdef KDTreeNode < handle
+classdef RangeTreeNode < handle
     %Kd-Tree Node
     
     properties
@@ -6,20 +6,29 @@ classdef KDTreeNode < handle
         % ----------
         % - idx: number
         %   Index of point in set of points
-        % - left: KDTreeNode | null
+        % - idx: number
+        %   Index of value item in point
+        % - parent: RangeTreeNode | null
         %   Left child
-        % - right: KDTreeNode | null
+        % - left: RangeTreeNode[]
+        %   Left child
+        % - right: RangeTreeNode[]
         %   Right child
         idx
+        index
+        parent
         left
         right
     end
     
     methods
-        function obj = KDTreeNode(idx, left, right)
+        function obj = RangeTreeNode(idx, index, parent, left, right)
             % Constructor
             
             % default values
+            if ~exist('parent', 'var')
+                parent = [];
+            end
             if ~exist('left', 'var')
                 left = [];
             end
@@ -28,6 +37,8 @@ classdef KDTreeNode < handle
             end
             
             obj.idx = idx;
+            obj.index = index;
+            obj.parent = parent;
             obj.left = left;
             obj.right = right;
         end

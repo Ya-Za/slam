@@ -4,9 +4,9 @@ classdef KDTree < BaseNN
     properties
         % Properties
         % ----------
-        % - r: nonnegative scalar
+        % - r: number
         %   Search radius
-        % - root: Node | null
+        % - root: KDTreeNode | null
         %   Root of tree
         % - D: number
         %   Number of dimensions
@@ -27,16 +27,17 @@ classdef KDTree < BaseNN
         end 
         function output = query(obj, point)
             output = obj.range(pointToLimits());
+            output = obj.filter(point, output);
             
             % add `point` to `points`
-            obj.addPointToPoints(point);
+            obj.add(point);
             
             % Local Functions
             function limits = pointToLimits()
                 limits = zeros(obj.D, 2);
                 for i = 1:obj.D
-                    limits(i, 1) = point(i) - obj.r;
-                    limits(i, 2) = point(i) + obj.r;
+                    limits(i, 1) = point(i) - obj.r - eps;
+                    limits(i, 2) = point(i) + obj.r + eps;
                 end
             end
         end
@@ -71,8 +72,8 @@ classdef KDTree < BaseNN
                 end
             end
         end
-        function idx = range(obj, limits)
-            idx = [];
+        function idxs = range(obj, limits)
+            idxs = [];
             rangeR(obj.root, 1);
             
             % Local Functions
@@ -93,7 +94,7 @@ classdef KDTree < BaseNN
                     rangeR(node.left, dd);
                 else
                     if inRange(point)
-                        idx(end + 1) = node.idx;
+                        idxs(end + 1) = node.idx;
                     end
                     rangeR(node.left, dd);
                     rangeR(node.right, dd);

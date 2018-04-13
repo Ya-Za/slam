@@ -1,49 +1,39 @@
 classdef TestIntersection < matlab.unittest.TestCase
-    
-    properties
-        originalPath
-    end
-    
-    methods (TestMethodSetup)
-        function addToPath(testCase)
-            % Add `parent` of current directory to the `path` of matlab
-            
-            % save original path
-            testCase.originalPath = path;
-            
-            % add `..` to the path
-            [parentFolder, ~, ~] = fileparts(pwd);
-            addpath(parentFolder);
-        end
-    end
-    
-    methods (TestMethodTeardown)
-        function restorePath(testCase)
-            % Restore original path
-            path(testCase.originalPath);
-        end
-    end
-    
     methods (Test)
-        function test_main(testCase)
-            configfile = '';
-            obj = Intersection(configfile);
-            actual_value = obj.get_results();
+        function testDefaultConstructor(testCase)
+            % arrange
+            obj = Intersection();
             
-            % methods
-            %   - NN(Nearest Neighbor)
-            expected_value(1).name = 'nn';
-            expected_value(1).times = [1, 2, 3, 4];
-            %   - ANN(Approximate Nearest Neighbor)
-            expected_value(2).name = 'ann';
-            expected_value(2).times = [1, 2, 3, 4];
-            %   - k-d tree
-            expected_value(3).name = 'kdtree';
-            expected_value(3).times = [1, 2, 3, 4];
+            expected = 1;
+            % act
+            actual = obj.radius;
+            % assert
+            testCase.assertEqual(actual, expected);
+        end
+        function testConstructor(testCase)
+            % arrange
+            radius = 2;
+            obj = Intersection(radius);
             
-            testCase.assertTrue(true);
-            
+            expected = radius;
+            % act
+            actual = obj.radius;
+            % assert
+            testCase.assertEqual(actual, expected);
+        end
+        function testHaveIntersection(testCase)
+            % arrange
+            radius = 1;
+            obj = Intersection(radius);
+            expected = [true, false];
+            % act
+            actual = [
+                obj.haveIntersection([0; 0], [1; 1]), ...
+                obj.haveIntersection([0; 0], [2; 2]) ...
+            ];
+                
+            % assert
+            testCase.assertEqual(actual, expected);
         end
     end
-    
 end
