@@ -129,11 +129,19 @@ classdef RangeTree < BaseNN
                             P = node;
                             return;
                         else
-                            P = getSplittingParent(node.left(1));
+                            if isempty(node.left)
+                                P = [];
+                            else
+                                P = getSplittingParent(node.left(1));
+                            end
                             return;
                         end
                     end
-                    P = getSplittingParent(node.right(1));
+                    if isempty(node.right)
+                        P = [];
+                    else
+                        P = getSplittingParent(node.right(1));
+                    end
                 end
                 function up(node, side)
                     if node == P
@@ -149,7 +157,7 @@ classdef RangeTree < BaseNN
                     parent = node.parent;
                     
                     while parent ~= P
-                        if parent.(other)(1) == node
+                        if ~isempty(parent.(other)) && parent.(other)(1) == node
                             checkNode(parent);
                         end
                         node = parent;
