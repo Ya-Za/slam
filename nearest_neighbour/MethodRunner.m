@@ -32,7 +32,12 @@ classdef MethodRunner < handle
             ));
 
             % `parfor` parallel for
-            for indexOfFilenames = 1:numel(filenames)
+            numberOfFilenames = numel(filenames);
+            for indexOfFilenames = 1:numberOfFilenames
+                % print
+                fprintf('\nSample: %d/%d\n', indexOfFilenames, numberOfFilenames);
+                disp('--------------------------------');
+                
                 filename = fullfile(...
                     obj.rootDir, ...
                     filenames(indexOfFilenames).name ...
@@ -57,6 +62,7 @@ classdef MethodRunner < handle
                     initTime = cputime() - beginTime;
 
                     methodName = func2str(methodHnadler);
+                    
                     % compute output
                     outputs = cell(1, numberOfPoints);
                     elapsedTimes = zeros(1, numberOfPoints);
@@ -75,11 +81,17 @@ classdef MethodRunner < handle
                     sample.output.(methodName).initTime = initTime;
                     sample.output.(methodName).outputs = outputs;
                     sample.output.(methodName).elapsedTimes = elapsedTimes;
+                    
+                    % print
+                    fprintf('%d. %s (%g s)\n', indexOfMethod, pad(methodName, 15), sum(elapsedTimes));
 
                     % `save(filename, '-struct', 'sample')` can not be call
                     % in `parfor` loop
                     MethodRunner.safeSave(filename, sample);
                 end
+                
+                % print
+                disp('--------------------------------');
             end
         end
     end
