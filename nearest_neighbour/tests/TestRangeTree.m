@@ -9,19 +9,16 @@ classdef TestRangeTree < matlab.unittest.TestCase
             expected = RangeTree(Intersection(), info, []);
             expected.root = RangeTreeNode(...
                 1, ...
-                1, ...
                 [], ...
-                [...
-                    RangeTreeNode(...
-                        2, ...
-                        1, ...
-                        [], ...
-                        [RangeTreeNode(4, 1), RangeTreeNode(4, 2)], ...
-                        [] ...
-                    ), ...
-                    RangeTreeNode(2, 2, [], [], RangeTreeNode(4, 2)) ...
-                ], ...
-                [RangeTreeNode(3, 1), RangeTreeNode(3, 2)] ...
+                RangeTreeNode(...
+                    2, ...
+                    [], ...
+                    RangeTreeNode(4, [], [], [], RangeTreeNode(4)), ...
+                    [], ...
+                    RangeTreeNode(2, [], [], RangeTreeNode(4), []) ...
+                ), ...
+                RangeTreeNode(3, [], [], [], RangeTreeNode(3)), ...
+                [] ...
             );
             expected.points = points;
             % act
@@ -35,27 +32,33 @@ classdef TestRangeTree < matlab.unittest.TestCase
             % Local Functions
             function tf = equalTwoTrees(t1, t2)
                 tf = true;
-                if length(t1) ~= length(t2)
+                if isempty(t1)
+                    if isempty(t2)
+                        tf = true;
+                        return;
+                    end
                     tf = false;
                     return;
                 end
-                for j = 1:length(t1)
-                    if t1(j).idx ~= t2(j).idx
-                        tf = false;
-                        return;
-                    end
-                    if t1(j).index ~= t2(j).index
-                        tf = false;
-                        return;
-                    end
-                    if ~equalTwoTrees(t1(j).left, t2(j).left)
-                        tf = false;
-                        return;
-                    end
-                    if ~equalTwoTrees(t1(j).right, t2(j).right)
-                        tf = false;
-                        return;
-                    end
+                if isempty(t2)
+                    tf = false;
+                    return;
+                end
+                if t1.idx ~= t2.idx
+                    tf = false;
+                    return;
+                end
+                if ~equalTwoTrees(t1.left, t2.left)
+                    tf = false;
+                    return;
+                end
+                if ~equalTwoTrees(t1.right, t2.right)
+                    tf = false;
+                    return;
+                end
+                if ~equalTwoTrees(t1.aux, t2.aux)
+                    tf = false;
+                    return;
                 end
             end
         end
@@ -72,12 +75,12 @@ classdef TestRangeTree < matlab.unittest.TestCase
             
             expected = {
                 [4, 2, 1, 3]
-                [2, 4]
+                [4, 2]
             };
             % act
             actual = {
                 RangeTree.points(obj.root)
-                RangeTree.points(obj.root.left(2))
+                RangeTree.points(obj.root.left)
             };
             % assert
             testCase.assertEqual(actual, expected);
@@ -100,9 +103,9 @@ classdef TestRangeTree < matlab.unittest.TestCase
             };
             % act
             actual = {
-                obj.ge(obj.root, 1.5).idx
-                obj.ge(obj.root.left(2), 1.5).idx
-                obj.ge(obj.root.left(2), 3)
+                obj.ge(obj.root, 1.5, 1).idx
+                obj.ge(obj.root.left.aux, 1.5, 2).idx
+                obj.ge(obj.root.left.aux, 3, 2)
             };
             % assert
             testCase.assertEqual(actual, expected);
@@ -125,9 +128,9 @@ classdef TestRangeTree < matlab.unittest.TestCase
             };
             % act
             actual = {
-                obj.le(obj.root, 2.5).idx
-                obj.le(obj.root.left(2), 2.5).idx
-                obj.le(obj.root.left(2), 0)
+                obj.le(obj.root, 2.5, 1).idx
+                obj.le(obj.root.left.aux, 2.5, 2).idx
+                obj.le(obj.root.left.aux, 0, 2)
             };
             % assert
             testCase.assertEqual(actual, expected);

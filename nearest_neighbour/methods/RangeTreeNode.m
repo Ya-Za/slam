@@ -6,23 +6,23 @@ classdef RangeTreeNode < handle
         % ----------
         % - idx: number
         %   Index of point in set of points
-        % - idx: number
-        %   Index of value item in point
         % - parent: RangeTreeNode | null
         %   Left child
-        % - left: RangeTreeNode[]
+        % - left: RangeTreeNode
         %   Left child
-        % - right: RangeTreeNode[]
+        % - right: RangeTreeNode
         %   Right child
+        % - aux: RangeTreeNode
+        %   Root of auxiliary tree
         idx
-        index
         parent
         left
         right
+        aux
     end
     
     methods
-        function obj = RangeTreeNode(idx, index, parent, left, right)
+        function obj = RangeTreeNode(idx, parent, left, right, aux)
             % Constructor
             
             % default values
@@ -35,12 +35,15 @@ classdef RangeTreeNode < handle
             if ~exist('right', 'var')
                 right = [];
             end
+            if ~exist('aux', 'var')
+                aux = [];
+            end
             
             obj.idx = idx;
-            obj.index = index;
             obj.parent = parent;
             obj.left = left;
             obj.right = right;
+            obj.aux = aux;
         end
     end
     

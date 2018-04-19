@@ -50,61 +50,66 @@ classdef RangeTree < BaseNN
             idx = length(obj.points);
             
             if isempty(obj.root)
-                obj.root = RangeTreeNode(idx, 1);
+                obj.root = RangeTreeNode(idx);
             else
-                addR(obj.root);
+                addR(obj.root, 1);
             end
             % Local Functions
-            function addR(nodes)
-                for node = nodes
-                    index = node.index;
-                    if point(index) < obj.points{node.idx}(index)
-                        if isempty(node.left)
-                            for i = index:obj.D
-                                node.left = [node.left, RangeTreeNode(idx, i, node)];
-                            end
-                        else
-                            addR(node.left)
+            function addR(node, index)
+                if isempty(node)
+                    return;
+                end
+                
+                addR(node.aux, index + 1);
+                
+                if point(index) < obj.points{node.idx}(index)
+                    if isempty(node.left)
+                        node.left = RangeTreeNode(idx, node);
+                        if index < obj.D
+                            node.left.aux = RangeTreeNode(idx);
                         end
                     else
-                        if isempty(node.right)
-                            for i = index:obj.D
-                                node.right = [node.right, RangeTreeNode(idx, i, node)];
-                            end
-                        else
-                            addR(node.right)
-                        end 
+                        addR(node.left, index)
+                    end
+                else
+                    if isempty(node.right)
+                        node.right = RangeTreeNode(idx, node);
+                        if index < obj.D
+                            node.right.aux = RangeTreeNode(idx);
+                        end
+                    else
+                        addR(node.right, index)
                     end
                 end
             end
         end
         function idxs = range(obj, limits)
             idxs = [];
-            rangeR(obj.root);
+            rangeR(obj.root, 1);
             
             % Local Functions
-            function rangeR(node)
+            function rangeR(node, index)
                 if isempty(node)
                     return;
                 end
-                a = limits(node.index, 1);
-                b = limits(node.index, 2);
+                a = limits(index, 1);
+                b = limits(index, 2);
                 
                 % find A
                 % - A.point(index) >= a
-                A = obj.ge(node, a);
+                A = obj.ge(node, a, index);
                 if isempty(A)
                     return;
                 end
                 % find B
                 % - B.point(index) <= b
-                B = obj.le(node, b);
+                B = obj.le(node, b, index);
                 if isempty(B)
                     return;
                 end
                 % find P
                 % - spliting parent for a, b
-                P = getSplittingParent(node);
+                P = findSplitNode(node);
                 if isempty(P)
                     return;
                 end
@@ -118,30 +123,36 @@ classdef RangeTree < BaseNN
                 upLeft(B);
                 
                 % Local Functions
-                function P = getSplittingParent(node)
+                function tf = inRange(idx)
+                    point = obj.points{idx};
+                    tf = true;
+                    for i = index:obj.D
+                        v_ = point(i);
+                        a_ = limits(i, 1);
+                        b_ = limits(i, 2);
+                        
+                        if v_ < a_ || v_ > b_
+                            tf = false;
+                            return
+                        end
+                    end
+                end
+                function P = findSplitNode(node)
                     if isempty(node)
                         P = [];
                         return;
                     end
-                    v = obj.points{node.idx}(node.index);
+                    v = obj.points{node.idx}(index);
                     if v >= a
                         if v <= b
                             P = node;
                             return;
                         else
-                            if isempty(node.left)
-                                P = [];
-                            else
-                                P = getSplittingParent(node.left(1));
-                            end
+                            P = findSplitNode(node.left);
                             return;
                         end
                     end
-                    if isempty(node.right)
-                        P = [];
-                    else
-                        P = getSplittingParent(node.right(1));
-                    end
+                    P = findSplitNode(node.right);
                 end
                 function up(node, side)
                     if node == P
@@ -157,7 +168,7 @@ classdef RangeTree < BaseNN
                     parent = node.parent;
                     
                     while parent ~= P
-                        if ~isempty(parent.(other)) && parent.(other)(1) == node
+                        if ~isempty(parent.(other)) && parent.(other) == node
                             checkNode(parent);
                         end
                         node = parent;
@@ -169,18 +180,18 @@ classdef RangeTree < BaseNN
                         if inRange(node.idx)
                             idxs(end + 1) = node.idx;
                         end
-                        pointers = node.(side);
-                        if isempty(pointers)
+                        child = node.(side);
+                        if isempty(child)
                             return;
                         end
-                        if length(pointers) == 1
-                            for idx = RangeTree.points(pointers(1))
+                        if isempty(child.aux)
+                            for idx = RangeTree.points(child)
                                 if inRange(idx)
                                     idxs(end + 1) = idx;
                                 end
                             end
                         else
-                            rangeR(pointers(2));
+                            rangeR(child.aux, index + 1);
                         end
                     end
                 end
@@ -191,63 +202,49 @@ classdef RangeTree < BaseNN
                     up(node, 'left');
                 end
             end
-            function tf = inRange(idx)
-                point = obj.points{idx};
-                tf = true;
-                for i = 1:length(point)
-                    v = point(i);
-                    a = limits(i, 1);
-                    b = limits(i, 2);
-
-                    if v < a || v > b
-                        tf = false;
-                        return
-                    end
-                end
-            end
         end
     end
     
     methods
-        function res = ge(obj, root, v)
+        function res = ge(obj, root, v, index)
             res = [];
             geR(root);
             
             % Local Functions
             function geR(node)
-                u = obj.points{node.idx}(node.index);
+                if isempty(node)
+                    return;
+                end
+                
+                u = obj.points{node.idx}(index);
                 if u == v
                     res = node;
                 elseif u > v
                     res = node;
-                    if ~isempty(node.left)
-                        geR(node.left(1));
-                    end
+                    geR(node.left);
                 else
-                    if ~isempty(node.right)
-                        geR(node.right(1));
-                    end
+                    geR(node.right);
                 end
             end
         end
-        function res = le(obj, root, v)
+        function res = le(obj, root, v, index)
             res = [];
             leR(root);
             
             % Local Functions
             function leR(node)
-                u = obj.points{node.idx}(node.index);
+                if isempty(node)
+                    return;
+                end
+                
+                u = obj.points{node.idx}(index);
                 if u == v
                     res = node;
                 elseif u < v
                     res = node;
-                    if ~isempty(node.right)
-                        leR(node.right(1));
-                    end
+                    leR(node.right);
                 else
-                    if ~isempty(node.left)
-                        leR(node.left(1));
-                    end
+                    leR(node.left);
                 end
             end
         end
@@ -261,13 +258,12 @@ classdef RangeTree < BaseNN
             
             % Local Functions
             function pointsR(node)
-                if ~isempty(node.left)
-                    pointsR(node.left(1));
+                if isempty(node)
+                    return;
                 end
-                res = [res, node.idx];
-                if ~isempty(node.right)
-                    pointsR(node.right(1));
-                end
+                pointsR(node.left);
+                res(end + 1) = node.idx;
+                pointsR(node.right);
             end
         end
     end
