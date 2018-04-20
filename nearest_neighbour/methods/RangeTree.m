@@ -50,32 +50,30 @@ classdef RangeTree < BaseNN
             idx = length(obj.points);
             
             if isempty(obj.root)
-                obj.root = RangeTreeNode(idx);
+                obj.root = RangeTreeNode(idx, [], [], [], []);
             else
                 addR(obj.root, 1);
             end
             % Local Functions
             function addR(node, index)
-                if isempty(node)
-                    return;
+                if ~isempty(node.aux)
+                    addR(node.aux, index + 1);
                 end
-                
-                addR(node.aux, index + 1);
                 
                 if point(index) < obj.points{node.idx}(index)
                     if isempty(node.left)
-                        node.left = RangeTreeNode(idx, node);
+                        node.left = RangeTreeNode(idx, node, [], [], []);
                         if index < obj.D
-                            node.left.aux = RangeTreeNode(idx);
+                            node.left.aux = RangeTreeNode(idx, [], [], [], []);
                         end
                     else
                         addR(node.left, index)
                     end
                 else
                     if isempty(node.right)
-                        node.right = RangeTreeNode(idx, node);
+                        node.right = RangeTreeNode(idx, node, [], [], []);
                         if index < obj.D
-                            node.right.aux = RangeTreeNode(idx);
+                            node.right.aux = RangeTreeNode(idx, [], [], [], []);
                         end
                     else
                         addR(node.right, index)
@@ -126,7 +124,9 @@ classdef RangeTree < BaseNN
                 function tf = inRange(idx)
                     point = obj.points{idx};
                     tf = true;
-                    for i = index:obj.D
+                    
+                    i = index;
+                    while i <= obj.D
                         v_ = point(i);
                         a_ = limits(i, 1);
                         b_ = limits(i, 2);
@@ -135,6 +135,8 @@ classdef RangeTree < BaseNN
                             tf = false;
                             return
                         end
+                        
+                        i = i + 1;
                     end
                 end
                 function P = findSplitNode(node)

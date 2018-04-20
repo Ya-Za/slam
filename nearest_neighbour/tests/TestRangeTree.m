@@ -13,11 +13,11 @@ classdef TestRangeTree < matlab.unittest.TestCase
                 RangeTreeNode(...
                     2, ...
                     [], ...
-                    RangeTreeNode(4, [], [], [], RangeTreeNode(4)), ...
+                    RangeTreeNode(4, [], [], [], RangeTreeNode(4, [], [], [], [])), ...
                     [], ...
-                    RangeTreeNode(2, [], [], RangeTreeNode(4), []) ...
+                    RangeTreeNode(2, [], [], RangeTreeNode(4, [], [], [], []), []) ...
                 ), ...
-                RangeTreeNode(3, [], [], [], RangeTreeNode(3)), ...
+                RangeTreeNode(3, [], [], [], RangeTreeNode(3, [], [], [], [])), ...
                 [] ...
             );
             expected.points = points;
@@ -148,6 +148,24 @@ classdef TestRangeTree < matlab.unittest.TestCase
             end
             
             expected = [1, 3];
+            % act
+            actual = obj.range(limits);
+            % assert
+            testCase.assertEqual(actual, expected);
+        end
+        function testRange3D(testCase)
+            % arrange
+            points = {[1; 1; -1], [-1; 1; 2], [2; 2; 1], [-2; 2; -2]};
+            limits = [0, 3; 0, 3; 0, 3];
+            numberOfDimensions = 3;
+            info = struct('numberOfDimensions', numberOfDimensions);
+            
+            obj = RangeTree(Intersection(), info, []);
+            for i = 1:length(points)
+                obj.add(points{i});
+            end
+            
+            expected = [3];
             % act
             actual = obj.range(limits);
             % assert

@@ -26,18 +26,18 @@ classdef RangeTreeNode < handle
             % Constructor
             
             % default values
-            if ~exist('parent', 'var')
-                parent = [];
-            end
-            if ~exist('left', 'var')
-                left = [];
-            end
-            if ~exist('right', 'var')
-                right = [];
-            end
-            if ~exist('aux', 'var')
-                aux = [];
-            end
+%             if ~exist('parent', 'var')
+%                 parent = [];
+%             end
+%             if ~exist('left', 'var')
+%                 left = [];
+%             end
+%             if ~exist('right', 'var')
+%                 right = [];
+%             end
+%             if ~exist('aux', 'var')
+%                 aux = [];
+%             end
             
             obj.idx = idx;
             obj.parent = parent;

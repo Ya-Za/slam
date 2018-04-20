@@ -6,9 +6,9 @@ clc();
 %% Parameters
 %%
 std = 4;
-maxDistance = 1000;
-numberOfPoints = 10000;
-numberOfDimensions = 2;
+maxDistance = 500;
+numberOfPoints = 1000;
+numberOfDimensions = 3;
 numberOfSamples = 1;
 radius = 1; % alwasy is 1!
 gridResolution = 4;
@@ -47,7 +47,7 @@ info = struct(...
 );
 
 configsDir = './assets/configs';
-configFilename = '2d';
+configFilename = '3d';
 %% Config
 %%
 % add `methods` to `path`

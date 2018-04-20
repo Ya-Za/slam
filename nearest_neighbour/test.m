@@ -4,6 +4,7 @@ clear();
 clc();
 
 %% Add path
+originalPath = path;
 addpath('.');
 addpath('./methods');
 
@@ -15,3 +16,6 @@ addpath('./methods');
 % suite = testsuite('./tests/TestKDTree.m');
 suite = testsuite('./tests/TestRangeTree.m');
 run(suite);
+
+%% Restore path
+path(originalPath);
